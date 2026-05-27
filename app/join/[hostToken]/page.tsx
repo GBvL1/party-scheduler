@@ -141,7 +141,7 @@ export default function JoinPage() {
                     REGISTRERAR <span className="cursor-blink">_</span>
                   </span>
                 ) : (
-                  "RAPPORTERA INN"
+                  "RAPPORTERA IN"
                 )}
               </button>
             </form>
