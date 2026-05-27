@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Stardos_Stencil } from "next/font/google";
 import "./globals.css";
+import { BackgroundMusic } from "./components/BackgroundMusic";
 
 const stardosStencil = Stardos_Stencil({
   subsets: ["latin"],
@@ -51,6 +52,7 @@ export default function RootLayout({
           </svg>
         </div>
 
+        <BackgroundMusic />
         {children}
       </body>
     </html>

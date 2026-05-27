@@ -43,6 +43,7 @@ app/
   globals.css                       # All styles and animations (no tailwind.config)
   components/
     GlitchText.tsx                  # Character-scramble text on mount
+    BackgroundMusic.tsx             # Streams /music/theme.mp3, starts on first click, volume 0.15
   join/[hostToken]/
     page.tsx                        # Guest registers their name
   respond/[friendToken]/
