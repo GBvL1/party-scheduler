@@ -328,7 +328,7 @@ export default function DashboardPage() {
                           {!lockedDateId && (
                             <button
                               onClick={() => { playClick(); setLockingDateId(d.id); }}
-                              className="text-[10px] tracking-[0.25em] text-white/0 group-hover:text-white/35 hover:!text-white uppercase font-mono transition-colors duration-150 shrink-0 border border-transparent group-hover:border-white/20 hover:!border-white/50 px-2 py-1"
+                              className="text-[10px] tracking-[0.25em] text-white/25 hover:text-white uppercase font-mono transition-colors duration-150 shrink-0 border border-white/15 hover:border-white/60 px-2 py-1"
                             >
                               LÅS
                             </button>
