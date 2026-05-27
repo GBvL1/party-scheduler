@@ -57,9 +57,10 @@ app/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.
                                     # Accepting registers as friend + marks availability for locked date.
-                                    # After accept: classified briefing types out (18ms/char), 15s reading grace,
-                                    # 5s self-destruct countdown → glitch-crash (1.7s) → 2s black → "UPPDRAG ACCEPTERAT"
-                                    # fades in (fade-in-slow) on pure black — no border box, minimal text.
+                                    # After accept: classified briefing types out (18ms/char), 20s reading grace,
+                                    # 5s self-destruct countdown → glitch-crash (1.6s, steps(1,end)) → permanent black.
+                                    # Fixed z-99999 black overlay covers ALL layout elements after crash.
+                                    # flicker class removed from wrapper during crash to prevent fighting opacity.
                                     # Declining: self-destruct countdown + "OMPRÖVA BESLUTET" to restart.
   api/
     events/route.ts                 # POST — create event + dates
@@ -179,8 +180,7 @@ They are already set in Vercel. Never commit `.env.local`.
 | `.cursor-blink` | Blinking underscore cursor for loading states |
 | `.crosshair-hud` | Pulsing crosshair — used in layout, not per-page |
 | `.crt-shutdown` | CRT power-off: white flash → vertical collapse to line → black. Apply to content wrapper, not `<main>` |
-| `.glitch-crash` | Violent fake crash: rapid chromatic thrashing → collapse to bright line → black. 1.7s, apply to content wrapper |
-| `.fade-in-slow` | 2.2s ease-in opacity fade — used on post-crash accepted screen |
+| `.glitch-crash` | Violent fake crash: 1.6s, `steps(1, end)` — instant digital jumps every 2% through chromatic thrashing, switches to `linear` at 52% for CRT horizontal-line collapse. Apply to content wrapper. |
 
 ### Overlays (layout only — do not add to pages)
 
