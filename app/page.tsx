@@ -39,7 +39,7 @@ export default function HomePage() {
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "RSA INITIATION", dates: FIXED_DATES }),
+        body: JSON.stringify({ name: "RSA INITIERING", dates: FIXED_DATES }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -81,7 +81,7 @@ export default function HomePage() {
           KLASSIFICERAT // BEHÖRIG PERSONAL ONLY
         </p>
         <h1 className="text-[clamp(28px,6vw,48px)] tracking-[0.35em] text-white uppercase mb-3">
-          {booted && <GlitchText text="INITIATION" delay={700} speed={30} />}
+          {booted && <GlitchText text="INITIERING" delay={700} speed={30} />}
         </h1>
         <p className="text-[12px] tracking-[0.3em] text-white/40 uppercase mb-10">
           OPERATION ID: RSA-2026 // FIELD COMMANDER ACCESS

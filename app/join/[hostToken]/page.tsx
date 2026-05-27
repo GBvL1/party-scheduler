@@ -76,7 +76,7 @@ export default function JoinPage() {
         {/* Heading */}
         <div className="mb-8 text-center">
           <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-2">
-            RSA INITIATION // OPERATIVE REGISTRATION
+            RSA INITIERING // OPERATIVE REGISTRATION
           </p>
           <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             IDENTIFIERA DIG
@@ -126,7 +126,7 @@ export default function JoinPage() {
         </form>
 
         <p className="mt-8 text-[13px] tracking-[0.3em] text-white/15 uppercase font-mono text-center">
-          RSA INITIATION // JUNE&ndash;JULY 2026
+          RSA INITIERING // JUNE&ndash;JULY 2026
         </p>
       </div>
     </main>

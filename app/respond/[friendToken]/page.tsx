@@ -135,7 +135,7 @@ export default function RespondPage() {
           </div>
           <div className="w-full h-px bg-white/20 my-4" />
           <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-            RSA INITIATION // STATUSRAPPORT
+            RSA INITIERING // STATUSRAPPORT
           </p>
           <h1 className="text-[22px] tracking-[0.2em] text-white uppercase">
             OPERATIV: {friendName}

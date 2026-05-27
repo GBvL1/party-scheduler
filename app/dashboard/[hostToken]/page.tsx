@@ -101,7 +101,7 @@ export default function DashboardPage() {
             RSA
           </div>
           <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-            RSA INITIATION // FÄLTKOMMANDOCENTRAL
+            RSA INITIERING // FÄLTKOMMANDOCENTRAL
           </p>
           <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             {eventName}

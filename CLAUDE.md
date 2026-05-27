@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# RSA INITIATION — Party Scheduler
+# RSA INITIERING — Party Scheduler
 
 Group availability app with a military/glitch aesthetic. Guests register via a single invite link and mark which dates they can attend. The host sees a dashboard with aggregated results sorted by popularity.
 
@@ -70,13 +70,15 @@ supabase/
 
 ```
 Host: / → clicks "INITIERA OPERATION"
-  → POST /api/events (hardcoded 14 dates, name "RSA INITIATION")
+  → POST /api/events (hardcoded 14 dates, name "RSA INITIERING")
   → redirect /dashboard/[hostToken]
 
 Host shares: /join/[hostToken]
 
 Guest: /join/[hostToken] → enters name
   → POST /api/friends { hostToken, name }
+    → if name already exists (case-insensitive): returns existing friendToken
+    → otherwise: creates new friend record
   → redirect /respond/[friendToken]
 
 Guest: /respond/[friendToken] → marks dates
@@ -147,7 +149,7 @@ They are already set in Vercel. Never commit `.env.local`.
 ```tsx
 import { GlitchText } from "@/app/components/GlitchText";
 
-<GlitchText text="INITIATION" delay={700} speed={30} />
+<GlitchText text="INITIERING" delay={700} speed={30} />
 ```
 
 Scrambles with random characters, then reveals left-to-right. Use on headings that should animate on page load. `delay` (ms) before starting, `speed` (ms per frame).
@@ -164,6 +166,7 @@ The 14 candidate dates are hardcoded in `app/page.tsx` as `FIXED_DATES`. If date
 
 - All routes use `import { supabase } from "@/lib/supabase"` — never instantiate a new client.
 - Token lookups always use `.eq("..._token", token).single()` — 404 if not found.
+- `POST /api/friends` does a case-insensitive name lookup first (`.ilike()`) — returns the existing `friendToken` if found, creates a new record otherwise.
 - Availability save is **replace-all**: delete existing rows for the friend, then insert the new selection.
 - API responses: `{ data }` on success, `{ error: string }` with appropriate status on failure.
 
