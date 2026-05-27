@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\nfp = data.get('tool_input', {}).get('file_path', '')\nSTRUCTURAL = ['package.json', 'route.ts', 'supabase.ts', 'schema.sql', 'globals.css', 'layout.tsx', 'page.tsx']\nif any(p in fp for p in STRUCTURAL):\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'additionalContext': f'Structural file edited: {fp}. Check if CLAUDE.md needs updating (routes, API patterns, env vars, schema, CSS classes, components). If yes, update it before finishing.'}}))\n\"",
+            "statusMessage": "Checking if CLAUDE.md needs updating..."
+          }
+        ]
+      }
+    ]
+  }
+}
