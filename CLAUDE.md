@@ -57,7 +57,7 @@ app/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.
                                     # Accepting registers as friend + marks availability for locked date.
-                                    # After accept: classified briefing types out (18ms/char), 20s reading grace,
+                                    # After accept: classified briefing types out (35ms/char), 7s reading grace,
                                     # 5s self-destruct countdown → glitch-crash (1.6s, steps(1,end)) → permanent black.
                                     # Fixed z-99999 black overlay covers ALL layout elements after crash.
                                     # flicker class removed from wrapper during crash to prevent fighting opacity.

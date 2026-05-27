@@ -149,16 +149,16 @@ export default function MissionPage() {
     }
   }, [step]);
 
-  // ── Briefing typewriter — 18ms/char ──
+  // ── Briefing typewriter — 35ms/char (slower = more tension; grace shortened to compensate) ──
 
-  const briefingTyped = useTypewriter(BRIEFING_TEXT, step === "briefing", 200, 18);
+  const briefingTyped = useTypewriter(BRIEFING_TEXT, step === "briefing", 200, 35);
 
-  // Text done → 20s reading grace → show countdown
+  // Text done → 7s reading grace → show countdown  (total face-time ≈ same as before)
   useEffect(() => {
     if (step !== "briefing" || briefingScheduledRef.current) return;
     if (briefingTyped.length < BRIEFING_TEXT.length) return;
     briefingScheduledRef.current = true;
-    const timer = setTimeout(() => setShowBriefingCountdown(true), 20000);
+    const timer = setTimeout(() => setShowBriefingCountdown(true), 7000);
     return () => clearTimeout(timer);
   }, [step, briefingTyped.length]);
 
