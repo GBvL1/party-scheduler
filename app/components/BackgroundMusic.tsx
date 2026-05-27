@@ -9,7 +9,7 @@ export function BackgroundMusic() {
 
   useEffect(() => {
     const audio = new Audio("/music/theme.mp3");
-    audio.loop = true;
+
     audio.volume = 1; // volume controlled by gain node below
     audio.preload = "auto";
 
