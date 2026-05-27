@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { playClick, playConfirm, playError, playToggle } from "@/lib/sound";
 
 type CandidateDate = { id: string; date: string; selected: boolean };
 
@@ -63,6 +64,7 @@ export default function RespondPage() {
   function toggleDate(id: string) {
     setSaved(false);
     const wasSelected = selected.has(id);
+    playToggle(!wasSelected);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -76,6 +78,7 @@ export default function RespondPage() {
   }
 
   async function handleSave() {
+    playClick();
     setSaving(true);
     setError("");
     try {
@@ -85,9 +88,15 @@ export default function RespondPage() {
         body: JSON.stringify({ selectedDateIds: Array.from(selected) }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "SAVE FAILED."); return; }
+      if (!res.ok) {
+        playError();
+        setError(data.error || "SAVE FAILED.");
+        return;
+      }
+      playConfirm();
       setSaved(true);
     } catch {
+      playError();
       setError("NETWORK FAILURE.");
     } finally {
       setSaving(false);

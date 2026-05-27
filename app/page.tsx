@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GlitchText } from "./components/GlitchText";
+import { playClick, playConfirm, playError } from "@/lib/sound";
 
 const FIXED_DATES = [
   "2026-06-07",
@@ -26,13 +27,26 @@ export default function HomePage() {
   const [booted, setBooted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [ambientGlitch, setAmbientGlitch] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setBooted(true), 40);
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    if (!booted) return;
+    const id = setInterval(() => {
+      if (Math.random() < 0.45) {
+        setAmbientGlitch(true);
+        setTimeout(() => setAmbientGlitch(false), 500);
+      }
+    }, 7000);
+    return () => clearInterval(id);
+  }, [booted]);
+
   async function initialize() {
+    playClick();
     setLoading(true);
     setError("");
     try {
@@ -43,12 +57,15 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        playError();
         setError(data.error || "SYSTEM FAILURE.");
         setLoading(false);
         return;
       }
+      playConfirm();
       router.push(`/dashboard/${data.hostToken}`);
     } catch {
+      playError();
       setError("NETWORK FAILURE. RETRY OPERATION.");
       setLoading(false);
     }
@@ -58,6 +75,7 @@ export default function HomePage() {
     <main
       className={`min-h-screen flex flex-col items-center justify-center px-6 py-16 ${booted ? "crt-boot" : "opacity-0"}`}
     >
+      <div className={ambientGlitch ? "glitch-burst" : ""}>
       <div className="w-full max-w-xl text-center flicker">
 
         {/* RSA Logo */}
@@ -111,6 +129,7 @@ export default function HomePage() {
         <p className="mt-10 text-[11px] tracking-[0.35em] text-white/20 uppercase">
           DEPLOYMENT WINDOW: JUNI &ndash; JULI 2026 // 14 DATUM LADDADE
         </p>
+      </div>
       </div>
     </main>
   );

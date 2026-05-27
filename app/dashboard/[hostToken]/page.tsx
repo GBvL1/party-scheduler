@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { playClick, playConfirm } from "@/lib/sound";
 
 type Friend = { id: string; name: string; token: string };
 type DateEntry = { id: string; date: string; availableFriends: string[] };
@@ -59,7 +60,9 @@ export default function DashboardPage() {
   }
 
   async function copyText(text: string, key: string) {
+    playClick();
     await navigator.clipboard.writeText(text);
+    playConfirm();
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
   }
@@ -111,7 +114,7 @@ export default function DashboardPage() {
               {maxResponders} BEKRÄFTADE OPERATIVES
             </span>
             <button
-              onClick={fetchDashboard}
+              onClick={() => { playClick(); fetchDashboard(); }}
               className="text-[13px] tracking-widest text-white/50 hover:text-white uppercase transition-colors underline underline-offset-4"
             >
               UPPDATERA

@@ -59,6 +59,7 @@ app/
 
 lib/
   supabase.ts                       # Singleton Supabase client (lazy init)
+  sound.ts                          # Web Audio API sound synthesis (playClick, playConfirm, playError, playToggle)
 
 supabase/
   schema.sql                        # Full DB schema — run this to set up a fresh DB
@@ -133,6 +134,8 @@ They are already set in Vercel. Never commit `.env.local`.
 | `.crt-boot` | CRT power-on animation — add to `<main>` on page load |
 | `.flicker` | Subtle ambient opacity flicker — add to main content div |
 | `.page-glitch` | Full-screen glitch flash — trigger on form submit |
+| `.page-glitch-hard` | More violent version — used on join/respond submits |
+| `.glitch-burst` | Ambient content glitch — apply to wrapper div, triggers randomly |
 | `.select-glitch` | Row-level glitch flash — trigger on date toggle |
 | `.btn-rsa` | Military button style with violent `:active` glitch |
 | `.cursor-blink` | Blinking underscore cursor for loading states |
