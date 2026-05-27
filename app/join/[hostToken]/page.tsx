@@ -65,7 +65,7 @@ export default function JoinPage() {
             RSA
           </div>
           <div
-            className="text-[11px] tracking-[0.45em] text-white/60 uppercase mt-1"
+            className="text-[13px] tracking-[0.45em] text-white/60 uppercase mt-1"
           >
             RSA SER ALLT
           </div>
@@ -75,13 +75,13 @@ export default function JoinPage() {
 
         {/* Heading */}
         <div className="mb-8 text-center">
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-2">
+          <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-2">
             RSA INITIATION // OPERATIVE REGISTRATION
           </p>
           <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             IDENTIFIERA DIG
           </h1>
-          <p className="text-[11px] text-white/35 tracking-widest uppercase mt-2">
+          <p className="text-[13px] text-white/55 tracking-widest uppercase mt-2">
             ANGE DITT NAMN FÖR ATT FORTSÄTTA
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function JoinPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[9px] tracking-[0.35em] text-white/40 uppercase mb-2 text-center">
+            <label className="block text-[13px] tracking-[0.35em] text-white/40 uppercase mb-2 text-center">
               OPERATIVE DESIGNATION
             </label>
             <input
@@ -99,12 +99,12 @@ export default function JoinPage() {
               placeholder="DITT NAMN"
               autoComplete="off"
               autoFocus
-              className="w-full bg-black border-2 border-white/40 focus:border-white text-white placeholder:text-white/20 px-4 py-3 text-sm tracking-widest uppercase text-center outline-none transition-colors duration-100"
+              className="w-full bg-black border-2 border-white/40 focus:border-white text-white placeholder:text-white/40 px-4 py-3 text-sm tracking-widest uppercase text-center outline-none transition-colors duration-100"
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-[10px] tracking-widest border border-red-800/50 px-3 py-2 bg-red-950/20 text-center">
+            <p className="text-red-400 text-[12px] tracking-widest border border-red-800/50 px-3 py-2 bg-red-950/20 text-center">
               [ERR] {error}
             </p>
           )}
@@ -112,7 +112,7 @@ export default function JoinPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full border-2 border-white text-white uppercase tracking-[0.4em] py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            className="btn-rsa w-full border-2 border-white text-white uppercase tracking-[0.4em] py-4 text-sm font-bold hover:bg-white hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ fontSize: "14px" }}
           >
             {loading ? (
@@ -125,7 +125,7 @@ export default function JoinPage() {
           </button>
         </form>
 
-        <p className="mt-8 text-[9px] tracking-[0.3em] text-white/15 uppercase font-mono text-center">
+        <p className="mt-8 text-[13px] tracking-[0.3em] text-white/15 uppercase font-mono text-center">
           RSA INITIATION // JUNE&ndash;JULY 2026
         </p>
       </div>

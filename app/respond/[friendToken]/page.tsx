@@ -134,20 +134,20 @@ export default function RespondPage() {
             RSA
           </div>
           <div className="w-full h-px bg-white/20 my-4" />
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-1">
-            RSA INITIATION // TILLGÄNGLIGHETSRAPPORT
+          <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+            RSA INITIATION // STATUSRAPPORT
           </p>
           <h1 className="text-[22px] tracking-[0.2em] text-white uppercase">
             OPERATIV: {friendName}
           </h1>
-          <p className="text-[10px] text-white/35 tracking-widest uppercase mt-1">
+          <p className="text-[12px] text-white/55 tracking-widest uppercase mt-1">
             MARKERA VILKA DATUM DU KAN
           </p>
         </div>
 
         {/* Date list */}
         {dates.length === 0 ? (
-          <p className="text-white/30 text-xs tracking-widest font-mono text-center py-8 border border-white/10">
+          <p className="text-white/50 text-xs tracking-widest font-mono text-center py-8 border border-white/10">
             INGA DATUM TILLGÄNGLIGA
           </p>
         ) : (
@@ -169,8 +169,8 @@ export default function RespondPage() {
                   `}
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <span className={`text-[10px] font-mono shrink-0 w-5 text-right
-                      ${isSelected ? "text-black/40" : "text-white/25"}`}
+                    <span className={`text-[12px] font-mono shrink-0 w-5 text-right
+                      ${isSelected ? "text-black/40" : "text-white/40"}`}
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
@@ -200,7 +200,7 @@ export default function RespondPage() {
 
         {/* Count */}
         {dates.length > 0 && (
-          <p className="text-[9px] tracking-[0.35em] text-white/25 uppercase font-mono mt-4">
+          <p className="text-[13px] tracking-[0.35em] text-white/40 uppercase font-mono mt-4">
             {selected.size === 0
               ? "INGA DATUM VALDA"
               : `${selected.size} DATUM MARKERADE // ${dates.length - selected.size} AVBÖJDA`
@@ -209,13 +209,13 @@ export default function RespondPage() {
         )}
 
         {error && (
-          <p className="text-red-400 text-[10px] tracking-widest font-mono border border-red-800/50 px-3 py-2 bg-red-950/20 mt-5">
+          <p className="text-red-400 text-[12px] tracking-widest font-mono border border-red-800/50 px-3 py-2 bg-red-950/20 mt-5">
             [ERR] {error}
           </p>
         )}
 
         {saved && (
-          <div className="border border-white/30 text-white text-[10px] tracking-[0.3em] uppercase font-mono px-5 py-4 mt-5 bg-white/5">
+          <div className="border border-white/30 text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 py-4 mt-5 bg-white/5">
             [OK] TILLGÄNGLIGHET SPARAD. DU KAN UPPDATERA NÄR SOM HELST.
           </div>
         )}
@@ -224,7 +224,7 @@ export default function RespondPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full mt-6 border-2 border-white text-white uppercase tracking-[0.35em] py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            className="btn-rsa w-full mt-6 border-2 border-white text-white uppercase tracking-[0.35em] py-4 text-sm font-bold hover:bg-white hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ fontSize: "13px" }}
           >
             {saving ? (
@@ -237,7 +237,7 @@ export default function RespondPage() {
           </button>
         )}
 
-        <p className="mt-8 text-[9px] tracking-[0.3em] text-white/12 uppercase font-mono text-center">
+        <p className="mt-8 text-[13px] tracking-[0.3em] text-white/12 uppercase font-mono text-center">
           RSA SER ALLT // DETTA FORMULÄR ÄR PERSONLIGT
         </p>
       </div>
