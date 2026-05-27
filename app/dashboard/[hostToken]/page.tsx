@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [missionToken, setMissionToken] = useState<string | null>(null);
   const [lockingDateId, setLockingDateId] = useState<string | null>(null);
   const [showLockOverlay, setShowLockOverlay] = useState(false);
   const [glitchingDateIds, setGlitchingDateIds] = useState<Set<string>>(new Set());
@@ -88,6 +89,7 @@ export default function DashboardPage() {
     setFriends(data.friends ?? []);
     setDates(data.dates ?? []);
     setLockedDateId(data.lockedDateId ?? null);
+    setMissionToken(data.missionToken ?? null);
     prevDatesRef.current = data.dates ?? [];
   }, []);
 
@@ -172,6 +174,10 @@ export default function DashboardPage() {
 
   function getDashboardLink() {
     return window.location.href;
+  }
+
+  function getMissionLink() {
+    return `${window.location.origin}/mission/${missionToken}`;
   }
 
   async function copyText(text: string, key: string) {
@@ -293,6 +299,14 @@ export default function DashboardPage() {
                 >
                   {copied === "share" ? "KOPIERAT" : "KOPIERA KALLELSE"}
                 </button>
+                {missionToken && (
+                  <button
+                    onClick={() => copyText(getMissionLink(), "mission")}
+                    className="btn-rsa border border-white/50 text-white/70 uppercase tracking-[0.3em] px-6 py-2 text-[12px] font-bold hover:border-white hover:text-white transition-all duration-100"
+                  >
+                    {copied === "mission" ? "KOPIERAT" : "KOPIERA UPPDRAGSLÄNK"}
+                  </button>
+                )}
                 <button
                   onClick={() => lockDate(null)}
                   className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/60 uppercase underline underline-offset-4 transition-colors duration-100"

@@ -51,7 +51,15 @@ app/
                                     # locked-date banner (A1), social signal after save (B2)
   dashboard/[hostToken]/
     page.tsx                        # Host dashboard: results-first, 15s live poll + countdown (B1), LISTA/GRID toggle,
-                                    # smart recommendation (A3), LÅS on top-3 only (B3), date locking, enriched share card (C2)
+                                    # smart recommendation (A3), LÅS on top-3 only (B3), date locking, enriched share card (C2),
+                                    # "KOPIERA UPPDRAGSLÄNK" button visible when a date is locked
+  mission/[missionToken]/
+    page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
+                                    # 3 yes/no commitment questions → name entry → accept/abort.
+                                    # Accepting registers as friend + marks availability for locked date.
+                                    # After accept: classified briefing types out (12ms/char), 4s grace,
+                                    # 5s self-destruct countdown → crt-shutdown → "UPPDRAG ACCEPTERAT" screen.
+                                    # Declining: self-destruct countdown + "OMPRÖVA BESLUTET" to restart.
   api/
     events/route.ts                 # POST — create event + dates
     friends/route.ts                # POST — register guest by name
@@ -59,9 +67,12 @@ app/
       route.ts                      # GET: dates+selections + lockedDate + respondedCount + totalCount
                                     # POST: saves selections; returns respondedCount + totalCount
     dashboard/[hostToken]/
-      route.ts                      # GET full dashboard data (lockedDateId + hasResponded per friend)
+      route.ts                      # GET full dashboard data (lockedDateId + missionToken + hasResponded per friend)
       lock/
         route.ts                    # POST — lock/unlock a date { dateId: string | null }
+    mission/[missionToken]/
+      route.ts                      # GET: { eventName, lockedDate, missionRef } — 404 if no locked date
+                                    # POST: { name } → register friend + upsert availability for locked date
 
 lib/
   supabase.ts                       # Singleton Supabase client (lazy init)
@@ -93,9 +104,16 @@ Guest: /respond/[friendToken] → marks dates
   → POST /api/availability/[friendToken]  (saves full selection, replaces previous)
 
 Host: /dashboard/[hostToken]
-  → GET /api/dashboard/[hostToken]        (dates sorted by count, lockedDateId, hasResponded per friend)
+  → GET /api/dashboard/[hostToken]        (dates sorted by count, lockedDateId, missionToken, hasResponded per friend)
   → polls every 15s silently; glitch-animates changed rows
   → POST /api/dashboard/[hostToken]/lock  (lock or unlock a date)
+  → once locked: "KOPIERA UPPDRAGSLÄNK" button appears → /mission/[missionToken]
+
+Surprise guest: /mission/[missionToken]
+  → GET /api/mission/[missionToken]       (eventName, lockedDate, missionRef — 404 if no locked date)
+  → 3 yes/no questions → name entry → POST /api/mission/[missionToken] { name }
+    → registers as friend + upserts availability for locked date
+    → returns { accepted: true, name, returning: bool }
 ```
 
 ---
@@ -103,18 +121,21 @@ Host: /dashboard/[hostToken]
 ## Database schema
 
 ```
-events            id, name, host_token (unique), created_at, locked_date_id→candidate_dates (nullable)
+events            id, name, host_token (unique), mission_token (unique), created_at, locked_date_id→candidate_dates (nullable)
 candidate_dates   id, event_id→events, date         (unique per event)
 friends           id, event_id→events, name, token (unique), created_at
 availabilities    id, friend_id→friends, candidate_date_id→candidate_dates (unique pair)
 ```
 
-All tokens are UUIDs (v4). `host_token` unlocks the dashboard and the join link. `friend_token` unlocks the respond page.
+All tokens are UUIDs (v4). `host_token` unlocks the dashboard and the join link. `friend_token` unlocks the respond page. `mission_token` unlocks the spy acceptance page at `/mission/[missionToken]` — safe to share with surprise guests.
 
-`locked_date_id` is set by the host via `POST /api/dashboard/[hostToken]/lock`. Run this migration on existing DBs:
+`locked_date_id` is set by the host via `POST /api/dashboard/[hostToken]/lock`. Run these migrations on existing DBs:
 
 ```sql
 ALTER TABLE events ADD COLUMN IF NOT EXISTS locked_date_id uuid REFERENCES candidate_dates(id);
+ALTER TABLE events ADD COLUMN IF NOT EXISTS mission_token uuid DEFAULT gen_random_uuid();
+UPDATE events SET mission_token = gen_random_uuid() WHERE mission_token IS NULL;
+ALTER TABLE events ALTER COLUMN mission_token SET NOT NULL;
 ```
 
 ---
@@ -156,6 +177,7 @@ They are already set in Vercel. Never commit `.env.local`.
 | `.btn-rsa` | Military button style with violent `:active` glitch |
 | `.cursor-blink` | Blinking underscore cursor for loading states |
 | `.crosshair-hud` | Pulsing crosshair — used in layout, not per-page |
+| `.crt-shutdown` | CRT power-off: white flash → vertical collapse to line → black. Apply to content wrapper, not `<main>` |
 
 ### Overlays (layout only — do not add to pages)
 
@@ -218,4 +240,5 @@ Merging to `main` triggers Vercel deploy automatically. Check Vercel dashboard o
 | Where is Supabase config? | `lib/supabase.ts` + `.env.local` |
 | Where is DB schema? | `supabase/schema.sql` |
 | Where is the invite link generated? | `app/dashboard/[hostToken]/page.tsx` (constructed from `window.location.origin`) |
+| Where is the mission link generated? | `app/dashboard/[hostToken]/page.tsx` → `getMissionLink()` — visible only when date is locked |
 | Where are Swedish strings? | In each page file inline — no i18n library |

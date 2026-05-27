@@ -9,7 +9,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, name, created_at, locked_date_id")
+    .select("id, name, created_at, locked_date_id, mission_token")
     .eq("host_token", hostToken)
     .single();
 
@@ -77,6 +77,7 @@ export async function GET(
     eventName: event.name,
     createdAt: event.created_at,
     lockedDateId: event.locked_date_id ?? null,
+    missionToken: event.mission_token ?? null,
     friends: (friends ?? []).map((f) => ({
       id: f.id,
       name: f.name,

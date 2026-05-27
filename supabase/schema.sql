@@ -4,9 +4,15 @@ create table if not exists events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   host_token text not null unique,
+  mission_token uuid not null default gen_random_uuid(),
   created_at timestamptz not null default now(),
   locked_date_id uuid references candidate_dates(id)
 );
+
+-- Migration for existing DBs:
+-- ALTER TABLE events ADD COLUMN IF NOT EXISTS mission_token uuid DEFAULT gen_random_uuid();
+-- UPDATE events SET mission_token = gen_random_uuid() WHERE mission_token IS NULL;
+-- ALTER TABLE events ALTER COLUMN mission_token SET NOT NULL;
 
 create table if not exists candidate_dates (
   id uuid primary key default gen_random_uuid(),
