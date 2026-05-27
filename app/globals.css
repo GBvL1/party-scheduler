@@ -203,8 +203,8 @@ body {
 }
 
 .btn-rsa:active {
-  filter: brightness(4) invert(1) contrast(6);
-  transform: translateX(3px) scaleX(0.98);
+  filter: brightness(7) invert(1) contrast(9) saturate(0);
+  transform: translateX(4px) scaleX(0.97) skewX(-1.5deg);
   transition: none;
 }
 
@@ -246,4 +246,41 @@ body {
 
 .crosshair-hud {
   animation: crosshair-pulse 5s infinite;
+}
+
+/* ── GLITCH BURST (ambient random content glitch) ──────────────────────── */
+
+@keyframes glitch-burst {
+  0%   { filter: brightness(8) invert(1) contrast(10); transform: translateX(-8px) skewX(2deg); }
+  10%  { filter: brightness(0.2) contrast(6); transform: translateX(8px) skewX(-2.5deg); }
+  20%  { filter: brightness(10) hue-rotate(180deg) saturate(8); transform: translateX(-5px); }
+  30%  { filter: brightness(0.4) invert(0.6); transform: translateX(5px); }
+  42%  { filter: brightness(6) contrast(4); transform: translateX(-3px) skewX(1deg); }
+  55%  { filter: brightness(2) contrast(2); transform: translateX(2px); }
+  70%  { filter: brightness(1.5); transform: none; }
+  100% { filter: none; transform: none; }
+}
+
+.glitch-burst {
+  animation: glitch-burst 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── PAGE GLITCH HARD (violent submit) ──────────────────────────────────── */
+
+@keyframes page-glitch-hard {
+  0%   { filter: brightness(18) invert(0.95) contrast(25); transform: scaleX(1.05) translateX(-10px) skewX(3deg); }
+  5%   { filter: brightness(0.1) contrast(10); transform: scaleX(0.97) translateX(10px); }
+  10%  { filter: brightness(15) hue-rotate(100deg) saturate(15); transform: translateX(-7px) skewX(-4deg); }
+  16%  { filter: brightness(6) contrast(7) hue-rotate(290deg); transform: translateX(7px); }
+  22%  { filter: brightness(25) invert(0.7) contrast(20); transform: scaleX(1.03) translateX(-5px); }
+  30%  { filter: brightness(0.15) contrast(5); transform: translateX(4px); }
+  40%  { filter: brightness(5) contrast(3); transform: skewX(-1deg); }
+  52%  { filter: brightness(0.7) contrast(2); transform: none; }
+  65%  { filter: brightness(3); }
+  80%  { filter: brightness(0.85); }
+  100% { filter: none; transform: none; }
+}
+
+.page-glitch-hard {
+  animation: page-glitch-hard 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
