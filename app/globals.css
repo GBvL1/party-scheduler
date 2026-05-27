@@ -1,5 +1,164 @@
 @import "tailwindcss";
 
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+}
+
+/* ── OVERLAYS ─────────────────────────────────────────────────────────── */
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.10) 2px,
+    rgba(0, 0, 0, 0.10) 4px
+  );
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.75) 100%);
+}
+
+/* ── LOGO GLITCH ──────────────────────────────────────────────────────── */
+
+.logo-rsa {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+}
+
+.logo-rsa::before,
+.logo-rsa::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  font: inherit;
+  width: 100%;
+  height: 100%;
+}
+
+.logo-rsa::before {
+  color: rgb(255, 30, 30);
+  animation: logo-glitch-red 6s infinite;
+}
+
+.logo-rsa::after {
+  color: rgb(0, 160, 255);
+  animation: logo-glitch-blue 6s 0.08s infinite;
+}
+
+@keyframes logo-glitch-red {
+  0%,  88%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
+  89% { clip-path: inset(15% 0 72% 0); transform: translateX(-5px); }
+  90% { clip-path: inset(62% 0 28% 0); transform: translateX(5px); }
+  91% { clip-path: inset(38% 0 48% 0); transform: translateX(-4px); }
+  92% { clip-path: inset(80% 0 8% 0);  transform: translateX(4px); }
+  93% { clip-path: inset(100% 0 0 0);  transform: none; }
+}
+
+@keyframes logo-glitch-blue {
+  0%,  90%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
+  91% { clip-path: inset(50% 0 38% 0); transform: translateX(5px); }
+  92% { clip-path: inset(8%  0 82% 0); transform: translateX(-5px); }
+  93% { clip-path: inset(70% 0 18% 0); transform: translateX(4px); }
+  94% { clip-path: inset(28% 0 62% 0); transform: translateX(-3px); }
+  95% { clip-path: inset(100% 0 0 0);  transform: none; }
+}
+
+/* ── PAGE BOOT (CRT power-on) ─────────────────────────────────────────── */
+
+@keyframes crt-boot {
+  0%   { opacity: 0; }
+  2%   { opacity: 1; filter: brightness(25) contrast(25) saturate(0); transform: scaleY(0.01) scaleX(1.03); }
+  4%   { filter: brightness(8) contrast(8); transform: scaleY(0.4) scaleX(1.01); }
+  6%   { filter: brightness(5) contrast(5) hue-rotate(80deg); transform: scaleY(0.85); }
+  8%   { opacity: 0.4; filter: brightness(15) contrast(15); transform: scaleY(1.04); }
+  9%   { opacity: 1; filter: brightness(4) contrast(4); transform: scaleY(0.97); }
+  11%  { filter: brightness(2) contrast(2); transform: none; }
+  13%  { filter: brightness(0.3); }
+  15%  { filter: brightness(4); opacity: 0.6; }
+  17%  { filter: none; opacity: 1; }
+  19%  { filter: brightness(2); }
+  22%  { filter: brightness(0.7); }
+  26%  { filter: brightness(1.4); }
+  32%  { filter: none; }
+  100% { filter: none; transform: none; opacity: 1; }
+}
+
+.crt-boot {
+  animation: crt-boot 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* ── DATE SELECT GLITCH ───────────────────────────────────────────────── */
+
+@keyframes select-glitch {
+  0%   { filter: brightness(8) invert(1); transform: translateX(8px) skewX(2deg); }
+  8%   { filter: brightness(0.2) invert(0.8) contrast(6); transform: translateX(-8px) skewX(-3deg); }
+  16%  { filter: brightness(10) contrast(4) hue-rotate(40deg); transform: translateX(5px); }
+  24%  { filter: brightness(0.4); transform: translateX(-4px); }
+  35%  { filter: brightness(5) contrast(3); transform: translateX(3px); }
+  50%  { filter: brightness(2) contrast(1.5); transform: translateX(-1px); }
+  70%  { filter: brightness(1.3); transform: none; }
+  100% { filter: none; transform: none; }
+}
+
+.select-glitch {
+  animation: select-glitch 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── PAGE GLITCH (full-screen flash on submit) ────────────────────────── */
+
+@keyframes page-glitch {
+  0%   { filter: brightness(10) invert(0.9) contrast(12); transform: scaleX(1.02) translateX(-4px); }
+  6%   { filter: brightness(0.2) contrast(6); transform: scaleX(0.99) translateX(4px); }
+  12%  { filter: brightness(8) hue-rotate(200deg); transform: translateX(-3px) skewX(2deg); }
+  20%  { filter: brightness(3) contrast(3); transform: translateX(3px); }
+  30%  { filter: brightness(2); transform: none; }
+  45%  { filter: brightness(0.5) contrast(2); }
+  60%  { filter: brightness(1.8); }
+  80%  { filter: brightness(0.9); }
+  100% { filter: none; transform: none; }
+}
+
+.page-glitch {
+  animation: page-glitch 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── CURSOR BLINK ─────────────────────────────────────────────────────── */
+
+@keyframes cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* ── FLICKER (subtle ambient) ─────────────────────────────────────────── */
+
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%  { opacity: 0.92; }
+  97%  { opacity: 1; }
+  98%  { opacity: 0.88; }
+  99%  { opacity: 0.95; }
+}
+
+.flicker {
+  animation: flicker 8s infinite;
 }

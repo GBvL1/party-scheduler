@@ -8,12 +8,12 @@ type DateEntry = { id: string; date: string; availableFriends: string[] };
 
 function formatDateLabel(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+  return new Date(year, month - 1, day).toLocaleDateString("sv-SE", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-  });
+  }).toUpperCase();
 }
 
 export default function DashboardPage() {
@@ -23,21 +23,19 @@ export default function DashboardPage() {
   const [dates, setDates] = useState<DateEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [newFriendName, setNewFriendName] = useState("");
-  const [addingFriend, setAddingFriend] = useState(false);
-  const [addError, setAddError] = useState("");
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [booted, setBooted] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {
       const res = await fetch(`/api/dashboard/${hostToken}`);
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to load dashboard."); return; }
+      if (!res.ok) { setError(data.error || "FAILED TO LOAD."); return; }
       setEventName(data.eventName);
       setFriends(data.friends);
       setDates(data.dates);
     } catch {
-      setError("Network error.");
+      setError("NETWORK ERROR.");
     } finally {
       setLoading(false);
     }
@@ -45,204 +43,241 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
-  async function addFriend(e: React.FormEvent) {
-    e.preventDefault();
-    setAddError("");
-    if (!newFriendName.trim()) { setAddError("Please enter a name."); return; }
-    setAddingFriend(true);
-    try {
-      const res = await fetch("/api/friends", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostToken, name: newFriendName.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAddError(data.error || "Failed to add friend."); return; }
-      setNewFriendName("");
-      fetchDashboard();
-    } catch {
-      setAddError("Network error.");
-    } finally {
-      setAddingFriend(false);
+  useEffect(() => {
+    if (!loading) {
+      const t = setTimeout(() => setBooted(true), 40);
+      return () => clearTimeout(t);
     }
-  }
+  }, [loading]);
 
-  function getFriendLink(token: string) {
-    return `${window.location.origin}/respond/${token}`;
-  }
-
-  async function copyLink(token: string) {
-    await navigator.clipboard.writeText(getFriendLink(token));
-    setCopiedToken(token);
-    setTimeout(() => setCopiedToken(null), 2000);
+  function getJoinLink() {
+    return `${window.location.origin}/join/${hostToken}`;
   }
 
   function getDashboardLink() {
     return window.location.href;
   }
 
-  async function copyDashboardLink() {
-    await navigator.clipboard.writeText(getDashboardLink());
-    setCopiedToken("dashboard");
-    setTimeout(() => setCopiedToken(null), 2000);
+  async function copyText(text: string, key: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   }
 
-  const maxFriends = friends.length;
+  const maxResponders = friends.length;
 
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400 text-lg">Loading dashboard...</p>
+        <p className="text-white/40 text-xs tracking-[0.4em] uppercase font-mono">
+          LADDAR INTEL <span className="cursor-blink">_</span>
+        </p>
       </main>
     );
   }
 
   if (error) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-red-500 text-lg">{error}</p>
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <p className="text-red-400 text-xs tracking-widest font-mono border border-red-800/50 px-4 py-3 bg-red-950/20">
+          [ACCESS DENIED] {error}
+        </p>
       </main>
     );
   }
 
+  const sortedDates = [...dates].sort((a, b) => b.availableFriends.length - a.availableFriends.length);
+
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <main className={`min-h-screen px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
+      <div className="max-w-3xl mx-auto space-y-8 flicker">
+
         {/* Header */}
-        <div className="text-center">
-          <div className="text-4xl mb-2">🎉</div>
-          <h1 className="text-3xl font-bold text-gray-900">{eventName}</h1>
-          <p className="text-gray-500 mt-1">Host Dashboard</p>
+        <div className="border-b border-white/20 pb-8">
+          <div
+            className="logo-rsa text-[64px] leading-none tracking-tight text-white block mb-2"
+            data-text="RSA"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            RSA
+          </div>
+          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase font-mono mb-1">
+            RSA INITIATION // FÄLTKOMMANDOCENTRAL
+          </p>
+          <h1
+            className="text-[28px] tracking-[0.25em] text-white uppercase"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {eventName}
+          </h1>
+          <div className="flex items-center gap-6 mt-3">
+            <span className="text-[10px] tracking-widest text-white/30 font-mono uppercase">
+              {maxResponders} OPERATIVA INLOGGADE
+            </span>
+            <button
+              onClick={fetchDashboard}
+              className="text-[9px] tracking-widest text-white/30 hover:text-white uppercase font-mono transition-colors underline underline-offset-4"
+            >
+              UPPDATERA
+            </button>
+          </div>
         </div>
 
-        {/* Dashboard link */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Your Dashboard Link
+        {/* General Invitation Link */}
+        <div className="border border-white/20 p-5">
+          <h2
+            className="text-[11px] tracking-[0.4em] text-white/50 uppercase mb-1"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            DEPLYOERING LÄNK
           </h2>
-          <div className="flex items-center gap-3">
-            <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 truncate">
+          <p className="text-[9px] tracking-[0.25em] text-white/25 uppercase font-mono mb-4">
+            DELA DENNA LÄNK MED ALLA OPERATIVA. DE REGISTRERAR SINA EGNA NAMN.
+          </p>
+          <div className="flex items-stretch gap-0">
+            <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[10px] text-white/50 font-mono tracking-wider truncate">
+              {typeof window !== "undefined" ? getJoinLink() : ""}
+            </code>
+            <button
+              onClick={() => copyText(getJoinLink(), "join")}
+              className="shrink-0 border-2 border-white text-white text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {copied === "join" ? "KOPIERAT" : "KOPIERA"}
+            </button>
+          </div>
+        </div>
+
+        {/* Dashboard Link */}
+        <div className="border border-white/10 p-5">
+          <h2
+            className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-1"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            DIN KOMMANDOLÄNK
+          </h2>
+          <p className="text-[9px] tracking-[0.25em] text-white/20 uppercase font-mono mb-4">
+            BOKMÄRK DENNA LÄNK. UTAN DEN FÖRLORAR DU ÅTKOMST.
+          </p>
+          <div className="flex items-stretch gap-0">
+            <code className="flex-1 bg-white/3 border border-white/10 px-3 py-3 text-[10px] text-white/30 font-mono tracking-wider truncate">
               {typeof window !== "undefined" ? getDashboardLink() : ""}
             </code>
             <button
-              onClick={copyDashboardLink}
-              className="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition"
+              onClick={() => copyText(getDashboardLink(), "dashboard")}
+              className="shrink-0 border border-white/30 text-white/40 text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              {copiedToken === "dashboard" ? "Copied!" : "Copy"}
+              {copied === "dashboard" ? "KOPIERAT" : "KOPIERA"}
             </button>
           </div>
-          <p className="mt-2 text-xs text-gray-400">
-            Bookmark this link — it&apos;s the only way back to your dashboard.
-          </p>
         </div>
 
-        {/* Add Friend */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Invite Friends
-          </h2>
-          <form onSubmit={addFriend} className="flex gap-3">
-            <input
-              type="text"
-              value={newFriendName}
-              onChange={(e) => setNewFriendName(e.target.value)}
-              placeholder="Friend's name"
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition"
-            />
-            <button
-              type="submit"
-              disabled={addingFriend}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-semibold px-5 py-2 rounded-xl transition disabled:opacity-60"
+        {/* Registered operatives */}
+        {friends.length > 0 && (
+          <div className="border border-white/10 p-5">
+            <h2
+              className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-4"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              {addingFriend ? "Adding..." : "Add"}
-            </button>
-          </form>
-          {addError && <p className="mt-2 text-red-500 text-sm">{addError}</p>}
-
-          {friends.length > 0 && (
-            <ul className="mt-5 divide-y divide-gray-50">
-              {friends.map((f) => (
-                <li key={f.id} className="flex items-center justify-between py-3">
-                  <span className="font-medium text-gray-800">{f.name}</span>
-                  <div className="flex items-center gap-2">
-                    <code className="hidden sm:block text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded max-w-[200px] truncate">
-                      /respond/{f.token.slice(0, 8)}...
-                    </code>
-                    <button
-                      onClick={() => copyLink(f.token)}
-                      className="text-sm bg-violet-50 hover:bg-violet-100 text-violet-600 font-medium px-3 py-1.5 rounded-lg transition"
-                    >
-                      {copiedToken === f.token ? "Copied!" : "Copy Link"}
-                    </button>
-                  </div>
-                </li>
+              REGISTRERADE OPERATIVA ({friends.length})
+            </h2>
+            <div className="space-y-px">
+              {friends.map((f, i) => (
+                <div key={f.id} className="flex items-center gap-4 py-2 border-b border-white/5">
+                  <span className="text-[9px] font-mono text-white/20 w-5 text-right shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-xs tracking-[0.2em] text-white/50 uppercase font-mono">
+                    {f.name}
+                  </span>
+                </div>
               ))}
-            </ul>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
 
         {/* Availability Results */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Availability Results
-            </h2>
-            <button
-              onClick={fetchDashboard}
-              className="text-xs text-violet-500 hover:text-violet-700 font-medium"
+            <h2
+              className="text-[11px] tracking-[0.4em] text-white/50 uppercase"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              Refresh
-            </button>
+              INTEL RAPPORT // TILLGÄNGLIGHET
+            </h2>
           </div>
 
           {dates.length === 0 ? (
-            <p className="text-gray-400 text-sm">No dates added yet.</p>
+            <p className="text-white/20 text-[10px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
+              INGA SVAR ÄNNU
+            </p>
           ) : (
-            <ol className="space-y-3">
-              {dates.map((d, i) => {
+            <div className="space-y-px">
+              {sortedDates.map((d, i) => {
                 const count = d.availableFriends.length;
-                const pct = maxFriends > 0 ? (count / maxFriends) * 100 : 0;
+                const pct = maxResponders > 0 ? (count / maxResponders) * 100 : 0;
+                const isTop = i === 0 && count > 0;
                 return (
-                  <li key={d.id} className="rounded-xl border border-gray-100 p-4">
+                  <div
+                    key={d.id}
+                    className={`border px-5 py-4 ${isTop ? "border-white bg-white/5" : "border-white/15"}`}
+                  >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-gray-300 w-6 text-right">
-                          {i + 1}
+                      <div className="flex items-start gap-4 min-w-0">
+                        <span className={`text-[10px] font-mono shrink-0 w-5 text-right mt-0.5
+                          ${isTop ? "text-white/50" : "text-white/20"}`}
+                        >
+                          {String(i + 1).padStart(2, "0")}
                         </span>
-                        <div>
-                          <p className="font-semibold text-gray-800">{formatDateLabel(d.date)}</p>
+                        <div className="min-w-0">
+                          <p className={`text-[11px] tracking-[0.15em] uppercase font-mono
+                            ${isTop ? "text-white" : "text-white/50"}`}
+                          >
+                            {formatDateLabel(d.date)}
+                          </p>
                           {d.availableFriends.length > 0 ? (
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              {d.availableFriends.join(", ")}
+                            <p className="text-[9px] tracking-widest text-white/30 uppercase font-mono mt-1">
+                              {d.availableFriends.join(" // ")}
                             </p>
                           ) : (
-                            <p className="text-sm text-gray-400 mt-0.5 italic">
-                              No responses yet
+                            <p className="text-[9px] tracking-widest text-white/15 uppercase font-mono mt-1 italic">
+                              INGA SVAR
                             </p>
                           )}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className="text-2xl font-bold text-violet-600">{count}</span>
-                        <span className="text-sm text-gray-400">/{maxFriends}</span>
+                        <span className={`text-2xl font-bold tracking-tight
+                          ${isTop ? "text-white" : "text-white/30"}`}
+                          style={{ fontFamily: "var(--font-display)" }}
+                        >
+                          {count}
+                        </span>
+                        <span className="text-[10px] text-white/20 font-mono">
+                          /{maxResponders}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Progress bar */}
-                    {maxFriends > 0 && (
-                      <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    {maxResponders > 0 && (
+                      <div className="mt-3 h-px bg-white/10">
                         <div
-                          className="h-full bg-violet-500 rounded-full transition-all"
+                          className="h-full bg-white transition-all duration-500"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     )}
-                  </li>
+                  </div>
                 );
               })}
-            </ol>
+            </div>
           )}
         </div>
+
+        <p className="text-[9px] tracking-[0.3em] text-white/10 uppercase font-mono text-center pb-4">
+          RSA SER ALLT // KLASSIFICERAT // {new Date().getFullYear()}
+        </p>
       </div>
     </main>
   );

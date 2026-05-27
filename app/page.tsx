@@ -1,215 +1,123 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function formatDateLabel(dateStr: string) {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfMonth(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
-
-function toDateStr(year: number, month: number, day: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+const FIXED_DATES = [
+  "2026-06-07",
+  "2026-06-14",
+  "2026-07-12",
+  "2026-07-21",
+  "2026-07-22",
+  "2026-07-23",
+  "2026-07-24",
+  "2026-07-25",
+  "2026-07-26",
+  "2026-07-27",
+  "2026-07-28",
+  "2026-07-29",
+  "2026-07-30",
+  "2026-07-31",
 ];
 
 export default function HomePage() {
   const router = useRouter();
-  const today = new Date();
-  const [eventName, setEventName] = useState("");
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [calYear, setCalYear] = useState(today.getFullYear());
-  const [calMonth, setCalMonth] = useState(today.getMonth());
+  const [booted, setBooted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function toggleDate(dateStr: string) {
-    setSelectedDates((prev) =>
-      prev.includes(dateStr) ? prev.filter((d) => d !== dateStr) : [...prev, dateStr]
-    );
-  }
+  useEffect(() => {
+    const t = setTimeout(() => setBooted(true), 40);
+    return () => clearTimeout(t);
+  }, []);
 
-  function prevMonth() {
-    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
-    else setCalMonth(m => m - 1);
-  }
-
-  function nextMonth() {
-    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
-    else setCalMonth(m => m + 1);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (!eventName.trim()) { setError("Please enter an event name."); return; }
-    if (selectedDates.length === 0) { setError("Please select at least one date."); return; }
-
+  async function initialize() {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: eventName.trim(), dates: selectedDates }),
+        body: JSON.stringify({ name: "RSA INITIATION", dates: FIXED_DATES }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Something went wrong."); return; }
+      if (!res.ok) {
+        setError(data.error || "SYSTEM FAILURE.");
+        setLoading(false);
+        return;
+      }
       router.push(`/dashboard/${data.hostToken}`);
     } catch {
-      setError("Network error. Please try again.");
-    } finally {
+      setError("NETWORK FAILURE. RETRY OPERATION.");
       setLoading(false);
     }
   }
 
-  const daysInMonth = getDaysInMonth(calYear, calMonth);
-  const firstDay = getFirstDayOfMonth(calYear, calMonth);
-  const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
-
-  const calCells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-
-  const sortedSelected = [...selectedDates].sort();
-
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-10">
-          <div className="text-5xl mb-3">🎉</div>
-          <h1 className="text-4xl font-bold text-gray-900">Party Scheduler</h1>
-          <p className="mt-2 text-gray-500 text-lg">Find the perfect date for everyone</p>
+    <main
+      className={`min-h-screen flex flex-col items-center justify-center px-6 py-16 ${booted ? "crt-boot" : "opacity-0"}`}
+    >
+      <div className="w-full max-w-xl text-center flicker">
+
+        {/* RSA Logo */}
+        <div className="mb-6 select-none">
+          <div
+            className="logo-rsa text-[clamp(100px,22vw,160px)] leading-none tracking-tight text-white block"
+            data-text="RSA"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            RSA
+          </div>
+          <div
+            className="text-[clamp(14px,3vw,20px)] tracking-[0.45em] text-white uppercase mt-2"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            RSA SER ALLT
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 space-y-8">
-          {/* Event Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Event Name
-            </label>
-            <input
-              type="text"
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
-              placeholder="e.g. Alice's Birthday Party"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition"
-            />
-          </div>
+        {/* Rule */}
+        <div className="w-full h-px bg-white/25 my-8" />
 
-          {/* Calendar */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Select Candidate Dates
-            </label>
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-              {/* Month nav */}
-              <div className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
-                <button
-                  type="button"
-                  onClick={prevMonth}
-                  className="p-1 rounded hover:bg-violet-500 transition"
-                >
-                  ‹
-                </button>
-                <span className="font-semibold">
-                  {MONTH_NAMES[calMonth]} {calYear}
-                </span>
-                <button
-                  type="button"
-                  onClick={nextMonth}
-                  className="p-1 rounded hover:bg-violet-500 transition"
-                >
-                  ›
-                </button>
-              </div>
+        {/* Title block */}
+        <p className="text-[10px] tracking-[0.4em] text-white/35 uppercase font-mono mb-3">
+          KLASSIFICERAT // BEHÖRIG PERSONAL ONLY
+        </p>
+        <h1
+          className="text-[clamp(28px,6vw,48px)] tracking-[0.35em] text-white uppercase mb-2"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          INITIATION
+        </h1>
+        <p className="text-[11px] tracking-[0.3em] text-white/30 uppercase font-mono mb-10">
+          OPERATION ID: RSA-2026 // FIELD COMMANDER ACCESS
+        </p>
 
-              {/* Day headers */}
-              <div className="grid grid-cols-7 bg-violet-50">
-                {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-                  <div key={d} className="text-center text-xs font-semibold text-violet-400 py-2">
-                    {d}
-                  </div>
-                ))}
-              </div>
+        {error && (
+          <p className="text-red-500 text-xs tracking-widest font-mono mb-6 border border-red-800 px-4 py-2 bg-red-950/30">
+            [SYSTEM ERROR] {error}
+          </p>
+        )}
 
-              {/* Days grid */}
-              <div className="grid grid-cols-7 gap-px bg-gray-100">
-                {calCells.map((day, i) => {
-                  if (!day) return <div key={`empty-${i}`} className="bg-white h-10" />;
-                  const dateStr = toDateStr(calYear, calMonth, day);
-                  const isSelected = selectedDates.includes(dateStr);
-                  const isPast = dateStr < todayStr;
-                  return (
-                    <button
-                      key={dateStr}
-                      type="button"
-                      disabled={isPast}
-                      onClick={() => toggleDate(dateStr)}
-                      className={`bg-white h-10 text-sm font-medium transition
-                        ${isPast ? "text-gray-300 cursor-not-allowed" : "hover:bg-violet-50 cursor-pointer"}
-                        ${isSelected ? "!bg-violet-600 !text-white" : "text-gray-700"}
-                        ${dateStr === todayStr && !isSelected ? "ring-2 ring-inset ring-violet-400" : ""}
-                      `}
-                    >
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Selected dates list */}
-            {sortedSelected.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {sortedSelected.map((d) => (
-                  <span
-                    key={d}
-                    className="inline-flex items-center gap-1 bg-violet-100 text-violet-700 text-xs font-medium px-3 py-1 rounded-full"
-                  >
-                    {formatDateLabel(d)}
-                    <button
-                      type="button"
-                      onClick={() => toggleDate(d)}
-                      className="ml-1 text-violet-400 hover:text-violet-700"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm font-medium">{error}</p>
+        <button
+          onClick={initialize}
+          disabled={loading}
+          className="relative border-2 border-white text-white uppercase tracking-[0.4em] px-14 py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          style={{ fontFamily: "var(--font-display)", fontSize: "15px" }}
+        >
+          {loading ? (
+            <span className="flex items-center gap-3">
+              INITIALISERAR
+              <span className="cursor-blink">_</span>
+            </span>
+          ) : (
+            "INITIALISERA OPERATION"
           )}
+        </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-xl transition disabled:opacity-60"
-          >
-            {loading ? "Creating..." : "Create Event & Get Links →"}
-          </button>
-        </form>
+        <p className="mt-10 text-[9px] tracking-[0.35em] text-white/15 uppercase font-mono">
+          DEPLOYMENT WINDOW: JUNE &ndash; JULY 2026 // 14 DATES LOADED
+        </p>
       </div>
     </main>
   );
