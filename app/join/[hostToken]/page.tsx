@@ -61,13 +61,11 @@ export default function JoinPage() {
           <div
             className="logo-rsa text-[72px] leading-none tracking-tight text-white block"
             data-text="RSA"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA
           </div>
           <div
             className="text-[11px] tracking-[0.45em] text-white/60 uppercase mt-1"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA SER ALLT
           </div>
@@ -76,17 +74,14 @@ export default function JoinPage() {
         <div className="w-full h-px bg-white/20 mb-8" />
 
         {/* Heading */}
-        <div className="mb-8">
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase font-mono mb-2">
+        <div className="mb-8 text-center">
+          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-2">
             RSA INITIATION // OPERATIVE REGISTRATION
           </p>
-          <h1
-            className="text-[28px] tracking-[0.25em] text-white uppercase"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             IDENTIFIERA DIG
           </h1>
-          <p className="text-[11px] text-white/35 tracking-widest uppercase font-mono mt-2">
+          <p className="text-[11px] text-white/35 tracking-widest uppercase mt-2">
             ANGE DITT NAMN FÖR ATT FORTSÄTTA
           </p>
         </div>
@@ -94,7 +89,7 @@ export default function JoinPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[9px] tracking-[0.35em] text-white/40 uppercase font-mono mb-2">
+            <label className="block text-[9px] tracking-[0.35em] text-white/40 uppercase mb-2 text-center">
               OPERATIVE DESIGNATION
             </label>
             <input
@@ -104,12 +99,12 @@ export default function JoinPage() {
               placeholder="DITT NAMN"
               autoComplete="off"
               autoFocus
-              className="w-full bg-black border-2 border-white/40 focus:border-white text-white placeholder:text-white/20 px-4 py-3 text-sm tracking-widest uppercase font-mono outline-none transition-colors duration-100"
+              className="w-full bg-black border-2 border-white/40 focus:border-white text-white placeholder:text-white/20 px-4 py-3 text-sm tracking-widest uppercase text-center outline-none transition-colors duration-100"
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-[10px] tracking-widest font-mono border border-red-800/50 px-3 py-2 bg-red-950/20">
+            <p className="text-red-400 text-[10px] tracking-widest border border-red-800/50 px-3 py-2 bg-red-950/20 text-center">
               [ERR] {error}
             </p>
           )}
@@ -118,7 +113,7 @@ export default function JoinPage() {
             type="submit"
             disabled={loading}
             className="w-full border-2 border-white text-white uppercase tracking-[0.4em] py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
-            style={{ fontFamily: "var(--font-display)", fontSize: "14px" }}
+            style={{ fontSize: "14px" }}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

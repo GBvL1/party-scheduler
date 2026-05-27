@@ -64,13 +64,11 @@ export default function HomePage() {
           <div
             className="logo-rsa text-[clamp(100px,22vw,160px)] leading-none tracking-tight text-white block"
             data-text="RSA"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA
           </div>
           <div
             className="text-[clamp(14px,3vw,20px)] tracking-[0.45em] text-white uppercase mt-2"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA SER ALLT
           </div>
@@ -85,7 +83,6 @@ export default function HomePage() {
         </p>
         <h1
           className="text-[clamp(28px,6vw,48px)] tracking-[0.35em] text-white uppercase mb-2"
-          style={{ fontFamily: "var(--font-display)" }}
         >
           INITIATION
         </h1>
@@ -103,7 +100,7 @@ export default function HomePage() {
           onClick={initialize}
           disabled={loading}
           className="relative border-2 border-white text-white uppercase tracking-[0.4em] px-14 py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
-          style={{ fontFamily: "var(--font-display)", fontSize: "15px" }}
+          style={{ fontSize: "15px" }}
         >
           {loading ? (
             <span className="flex items-center gap-3">

@@ -110,7 +110,6 @@ export default function RespondPage() {
         <div className="text-center max-w-sm">
           <div
             className="text-[48px] leading-none text-white mb-6"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA
           </div>
@@ -123,29 +122,25 @@ export default function RespondPage() {
   }
 
   return (
-    <main className={`min-h-screen px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
-      <div className="max-w-lg mx-auto flicker">
+    <main className={`min-h-screen flex flex-col items-center justify-center px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
+      <div className="w-full max-w-lg flicker">
 
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 text-center">
           <div
             className="logo-rsa text-[56px] leading-none tracking-tight text-white block mb-2"
             data-text="RSA"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA
           </div>
           <div className="w-full h-px bg-white/20 my-4" />
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase font-mono mb-1">
+          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-1">
             RSA INITIATION // TILLGÄNGLIGHETSRAPPORT
           </p>
-          <h1
-            className="text-[22px] tracking-[0.2em] text-white uppercase"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="text-[22px] tracking-[0.2em] text-white uppercase">
             OPERATIV: {friendName}
           </h1>
-          <p className="text-[10px] text-white/35 tracking-widest uppercase font-mono mt-1">
+          <p className="text-[10px] text-white/35 tracking-widest uppercase mt-1">
             MARKERA VILKA DATUM DU KAN
           </p>
         </div>
@@ -230,7 +225,7 @@ export default function RespondPage() {
             onClick={handleSave}
             disabled={saving}
             className="w-full mt-6 border-2 border-white text-white uppercase tracking-[0.35em] py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
-            style={{ fontFamily: "var(--font-display)", fontSize: "13px" }}
+            style={{ fontSize: "13px" }}
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">

@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-sans);
   --font-display: var(--font-display);
+  --font-mono: var(--font-display);
+}
+
+* {
+  cursor: crosshair !important;
 }
 
 body {
-  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  font-family: var(--font-display, 'Stardos Stencil', serif);
 }
 
 /* ── OVERLAYS ─────────────────────────────────────────────────────────── */

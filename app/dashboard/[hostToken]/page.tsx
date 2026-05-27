@@ -93,30 +93,26 @@ export default function DashboardPage() {
       <div className="max-w-3xl mx-auto space-y-8 flicker">
 
         {/* Header */}
-        <div className="border-b border-white/20 pb-8">
+        <div className="border-b border-white/20 pb-8 text-center">
           <div
             className="logo-rsa text-[64px] leading-none tracking-tight text-white block mb-2"
             data-text="RSA"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             RSA
           </div>
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase font-mono mb-1">
+          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-1">
             RSA INITIATION // FÄLTKOMMANDOCENTRAL
           </p>
-          <h1
-            className="text-[28px] tracking-[0.25em] text-white uppercase"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             {eventName}
           </h1>
-          <div className="flex items-center gap-6 mt-3">
-            <span className="text-[10px] tracking-widest text-white/30 font-mono uppercase">
+          <div className="flex items-center justify-center gap-6 mt-3">
+            <span className="text-[10px] tracking-widest text-white/30 uppercase">
               {maxResponders} OPERATIVA INLOGGADE
             </span>
             <button
               onClick={fetchDashboard}
-              className="text-[9px] tracking-widest text-white/30 hover:text-white uppercase font-mono transition-colors underline underline-offset-4"
+              className="text-[9px] tracking-widest text-white/30 hover:text-white uppercase transition-colors underline underline-offset-4"
             >
               UPPDATERA
             </button>
@@ -127,7 +123,6 @@ export default function DashboardPage() {
         <div className="border border-white/20 p-5">
           <h2
             className="text-[11px] tracking-[0.4em] text-white/50 uppercase mb-1"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             DEPLYOERING LÄNK
           </h2>
@@ -141,7 +136,6 @@ export default function DashboardPage() {
             <button
               onClick={() => copyText(getJoinLink(), "join")}
               className="shrink-0 border-2 border-white text-white text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               {copied === "join" ? "KOPIERAT" : "KOPIERA"}
             </button>
@@ -152,7 +146,6 @@ export default function DashboardPage() {
         <div className="border border-white/10 p-5">
           <h2
             className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-1"
-            style={{ fontFamily: "var(--font-display)" }}
           >
             DIN KOMMANDOLÄNK
           </h2>
@@ -166,7 +159,6 @@ export default function DashboardPage() {
             <button
               onClick={() => copyText(getDashboardLink(), "dashboard")}
               className="shrink-0 border border-white/30 text-white/40 text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               {copied === "dashboard" ? "KOPIERAT" : "KOPIERA"}
             </button>
@@ -178,7 +170,6 @@ export default function DashboardPage() {
           <div className="border border-white/10 p-5">
             <h2
               className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               REGISTRERADE OPERATIVA ({friends.length})
             </h2>
@@ -202,7 +193,6 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h2
               className="text-[11px] tracking-[0.4em] text-white/50 uppercase"
-              style={{ fontFamily: "var(--font-display)" }}
             >
               INTEL RAPPORT // TILLGÄNGLIGHET
             </h2>
@@ -250,7 +240,6 @@ export default function DashboardPage() {
                       <div className="shrink-0 text-right">
                         <span className={`text-2xl font-bold tracking-tight
                           ${isTop ? "text-white" : "text-white/30"}`}
-                          style={{ fontFamily: "var(--font-display)" }}
                         >
                           {count}
                         </span>
