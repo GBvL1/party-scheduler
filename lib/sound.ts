@@ -119,6 +119,64 @@ export function playError(): void {
   osc.start(t); osc.stop(t + 0.18);
 }
 
+// Single radar ping — the "blip" from playConfirm extracted standalone
+export function playBlip(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(2200, t);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.16, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+  osc.connect(g); g.connect(ac.destination);
+  osc.start(t); osc.stop(t + 0.14);
+}
+
+// Rhythmic blips while loading — returns a cleanup fn to stop
+export function startLoadingBlips(intervalMs = 370): () => void {
+  playBlip();
+  const id = setInterval(playBlip, intervalMs);
+  return () => clearInterval(id);
+}
+
+// Identity confirmed — 3 ascending pings + final lock-on chord
+export function playWelcomeBack(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const base = ac.currentTime;
+
+  // Three ascending sweep pings
+  ([0, 0.19, 0.38] as const).forEach((delay, i) => {
+    const t = base + delay;
+    const osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime([1400, 1800, 2200][i], t);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(t); osc.stop(t + 0.12);
+  });
+
+  // Lock-on chord at t+0.58
+  ([2200, 2750] as const).forEach((freq, i) => {
+    const t = base + 0.58;
+    const osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(i === 0 ? 0.22 : 0.11, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(t); osc.stop(t + 0.33);
+  });
+}
+
 // Sharp snap — pitch indicates selection state (on = bright, off = dull)
 export function playToggle(on: boolean): void {
   const ac = getCtx();

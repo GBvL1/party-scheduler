@@ -59,7 +59,7 @@ app/
 
 lib/
   supabase.ts                       # Singleton Supabase client (lazy init)
-  sound.ts                          # Web Audio API sound synthesis (playClick, playConfirm, playError, playToggle)
+  sound.ts                          # Web Audio API sound synthesis (playClick, playConfirm, playError, playToggle, playBlip, startLoadingBlips, playWelcomeBack)
 
 supabase/
   schema.sql                        # Full DB schema — run this to set up a fresh DB
@@ -78,8 +78,8 @@ Host shares: /join/[hostToken]
 
 Guest: /join/[hostToken] → enters name
   → POST /api/friends { hostToken, name }
-    → if name already exists (case-insensitive): returns existing friendToken
-    → otherwise: creates new friend record
+    → if name already exists (case-insensitive): returns existing friendToken + returning: true
+    → otherwise: creates new friend record + returning: false
   → redirect /respond/[friendToken]
 
 Guest: /respond/[friendToken] → marks dates
@@ -136,6 +136,7 @@ They are already set in Vercel. Never commit `.env.local`.
 | `.page-glitch` | Full-screen glitch flash — trigger on form submit |
 | `.page-glitch-hard` | More violent version — used on join/respond submits |
 | `.glitch-burst` | Ambient content glitch — apply to wrapper div, triggers randomly |
+| `.overlay-enter` | CRT terminal alert entrance — used on welcome-back overlay |
 | `.select-glitch` | Row-level glitch flash — trigger on date toggle |
 | `.btn-rsa` | Military button style with violent `:active` glitch |
 | `.cursor-blink` | Blinking underscore cursor for loading states |
