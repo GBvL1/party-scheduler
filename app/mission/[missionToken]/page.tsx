@@ -229,6 +229,15 @@ export default function MissionPage() {
     }
   }
 
+  // ── Briefing: auto-scroll text to bottom as it types ──
+
+  const briefingScrollRef = useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    if (briefingScrollRef.current) {
+      briefingScrollRef.current.scrollTop = briefingScrollRef.current.scrollHeight;
+    }
+  }, [briefingTyped]);
+
   // ── Derived ──
 
   const dateFormatted = missionData?.lockedDate ? formatDateFull(missionData.lockedDate) : "";
@@ -270,10 +279,17 @@ export default function MissionPage() {
         <div className="fixed inset-0 bg-black" style={{ zIndex: 99999 }} />
       )}
 
-      <main className={`min-h-screen flex flex-col items-center justify-center px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
+      <main className={[
+        step === "briefing"
+          ? "h-screen flex flex-col items-center px-4 py-8"
+          : "min-h-screen flex flex-col items-center justify-center px-4 py-12",
+        booted ? "crt-boot" : "opacity-0",
+      ].join(" ")}>
         <div
           className={[
             "w-full max-w-lg",
+            // During briefing: fill remaining height so text can scroll and countdown pins to bottom
+            step === "briefing" ? "flex flex-col flex-1 min-h-0" : "",
             // Remove flicker during crash so it doesn't fight the animation
             crashPhase ? "" : "flicker",
             stepGlitch ? "page-glitch" : "",
@@ -376,23 +392,25 @@ export default function MissionPage() {
 
           {/* ── BRIEFING ── */}
           {step === "briefing" && (
-            <div className="space-y-10">
-              <p className="text-[10px] tracking-[0.5em] text-white/20 uppercase font-mono">
+            <div className="flex flex-col flex-1 min-h-0 gap-6">
+              <p className="text-[10px] tracking-[0.5em] text-white/20 uppercase font-mono shrink-0">
                 RSA // UPPDRAGSGENOMGÅNG // KLASSIFICERAT
               </p>
-              <pre className="text-[clamp(11px,1.9vw,13px)] tracking-[0.07em] text-white/90 font-mono leading-[1.9] whitespace-pre-wrap font-[inherit]">
+              {/* flex-1 + overflow-y-auto: text scrolls within the viewport, never pushes countdown off screen */}
+              <pre ref={briefingScrollRef} className="flex-1 overflow-y-auto text-[clamp(11px,1.9vw,13px)] tracking-[0.07em] text-white/90 font-mono leading-[1.9] whitespace-pre-wrap font-[inherit]">
                 {briefingTyped}
                 {briefingTyped.length < BRIEFING_TEXT.length && (
                   <span className="cursor-blink">_</span>
                 )}
               </pre>
 
+              {/* shrink-0: countdown always fully visible at the bottom, never scrolled away */}
               {showBriefingCountdown && (
-                <div className="border-t border-white/15 pt-8 text-center space-y-3">
+                <div className="shrink-0 border-t border-white/15 pt-6 text-center space-y-2">
                   <p className="text-[10px] tracking-[0.5em] text-red-400/55 uppercase font-mono">
                     DETTA MEDDELANDE FÖRSTÖRS OM
                   </p>
-                  <p className="text-[clamp(88px,24vw,128px)] leading-none font-bold text-red-400 font-mono tabular-nums">
+                  <p className="text-[clamp(72px,20vw,104px)] leading-none font-bold text-red-400 font-mono tabular-nums">
                     {briefingCountdown}
                   </p>
                   <p className="text-[10px] tracking-[0.45em] text-white/20 uppercase font-mono">
