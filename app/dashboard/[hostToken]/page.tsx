@@ -27,6 +27,28 @@ function formatDateMicro(dateStr: string) {
   }).toUpperCase().replace(".", "");
 }
 
+function getRecommendation(
+  sortedDates: DateEntry[],
+  maxResponders: number,
+  lockedDateId: string | null
+): string | null {
+  if (lockedDateId || sortedDates.length === 0 || maxResponders === 0) return null;
+  const topCount = sortedDates[0].availableFriends.length;
+  if (topCount === 0) return null;
+
+  const tied = sortedDates.filter((d) => d.availableFriends.length === topCount);
+  if (tied.length > 1) {
+    return `DELAD TOPP — ${tied.length} DATUM MED ${topCount}/${maxResponders} SVAR`;
+  }
+  if (topCount === maxResponders) {
+    return `ALLA ${maxResponders} TILLGÄNGLIGA — PERFEKT MATCH`;
+  }
+  if (topCount === maxResponders - 1 && maxResponders > 2) {
+    return `NÄSTAN PERFEKT — ${topCount}/${maxResponders} — 1 OPERATIVE SAKNAS`;
+  }
+  return `REKOMMENDERAT — ${topCount}/${maxResponders} TILLGÄNGLIGA`;
+}
+
 export default function DashboardPage() {
   const { hostToken } = useParams<{ hostToken: string }>();
   const [eventName, setEventName] = useState("");
@@ -41,6 +63,8 @@ export default function DashboardPage() {
   const [lockingDateId, setLockingDateId] = useState<string | null>(null);
   const [showLockOverlay, setShowLockOverlay] = useState(false);
   const [glitchingDateIds, setGlitchingDateIds] = useState<Set<string>>(new Set());
+  const [pollCountdown, setPollCountdown] = useState(15);
+  const [newDataFlash, setNewDataFlash] = useState(false);
   const prevDatesRef = useRef<DateEntry[]>([]);
 
   const applyData = useCallback((data: any, silent: boolean) => {
@@ -75,7 +99,20 @@ export default function DashboardPage() {
         if (!silent) setError(data.error || "FAILED TO LOAD.");
         return;
       }
-      applyData(data, silent);
+
+      if (silent) {
+        const prevTotal = prevDatesRef.current.reduce((s, d) => s + d.availableFriends.length, 0);
+        const newTotal = (data.dates ?? []).reduce((s: number, d: any) => s + d.availableFriends.length, 0);
+        const hasChanges = prevTotal !== newTotal || prevDatesRef.current.length !== (data.dates ?? []).length;
+        setPollCountdown(15);
+        applyData(data, true);
+        if (hasChanges) {
+          setNewDataFlash(true);
+          setTimeout(() => setNewDataFlash(false), 1800);
+        }
+      } else {
+        applyData(data, false);
+      }
     } catch {
       if (!silent) setError("NETWORK ERROR.");
     } finally {
@@ -85,10 +122,17 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchDashboard(false); }, [fetchDashboard]);
 
+  // Live polling
   useEffect(() => {
     const id = setInterval(() => fetchDashboard(true), 15000);
     return () => clearInterval(id);
   }, [fetchDashboard]);
+
+  // Countdown ticker
+  useEffect(() => {
+    const id = setInterval(() => setPollCountdown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!loading && !error) {
@@ -141,7 +185,10 @@ export default function DashboardPage() {
   function buildShareMessage(dateId: string) {
     const entry = dates.find((d) => d.id === dateId);
     if (!entry) return "";
-    return `RSA INITIERING // DATUM BEKRÄFTAT\n\n${formatDateLabel(entry.date)}\n\n// RSA SER ALLT`;
+    const countLine = maxResponders > 0
+      ? `${entry.availableFriends.length}/${maxResponders} OPERATIVE${maxResponders !== 1 ? "S" : ""} BEKRÄFTADE`
+      : "";
+    return `RSA INITIERING // DATUM BEKRÄFTAT\n\n${formatDateLabel(entry.date)}${countLine ? `\n${countLine}` : ""}\n\n// RSA SER ALLT`;
   }
 
   const maxResponders = friends.length;
@@ -149,6 +196,12 @@ export default function DashboardPage() {
   const missingFriends = friends.filter((f) => !f.hasResponded);
   const sortedDates = [...dates].sort((a, b) => b.availableFriends.length - a.availableFriends.length);
   const lockedDate = lockedDateId ? dates.find((d) => d.id === lockedDateId) : null;
+  const recommendation = getRecommendation(sortedDates, maxResponders, lockedDateId);
+
+  // B3: top 3 dates with responses get always-visible LÅS button
+  const top3DateIds = new Set(
+    sortedDates.filter((d) => d.availableFriends.length > 0).slice(0, 3).map((d) => d.id)
+  );
 
   if (loading) {
     return (
@@ -191,7 +244,7 @@ export default function DashboardPage() {
             </h1>
             <div className="flex items-center justify-center gap-5 mt-3 flex-wrap">
               <span className="text-[12px] tracking-widest text-white/50 uppercase">
-                {maxResponders} OPERATIVES
+                {maxResponders} OPERATIVE{maxResponders !== 1 ? "S" : ""}
               </span>
               <span className="text-white/20">·</span>
               <span className="text-[12px] tracking-widest text-white/50 uppercase">
@@ -205,6 +258,13 @@ export default function DashboardPage() {
                   </span>
                 </>
               )}
+              <span className="text-white/20">·</span>
+              {/* B1 — Live indicator */}
+              <span className={`text-[10px] tracking-[0.3em] font-mono uppercase transition-colors duration-300
+                ${newDataFlash ? "text-white" : "text-white/20"}`}
+              >
+                {newDataFlash ? "■ NYTT INTEL" : `■ LIVE // ${pollCountdown}s`}
+              </span>
             </div>
           </div>
 
@@ -223,7 +283,7 @@ export default function DashboardPage() {
                   <> // {lockedDate.availableFriends.join(" · ")}</>
                 )}
               </p>
-              <pre className="bg-black border border-white/15 px-4 py-3 text-[11px] text-white/40 font-mono tracking-wider mb-4 whitespace-pre-wrap">
+              <pre className="bg-black border border-white/15 px-4 py-3 text-[11px] text-white/40 font-mono tracking-wider mb-4 whitespace-pre-wrap break-words">
                 {buildShareMessage(lockedDate.id)}
               </pre>
               <div className="flex items-center gap-5 flex-wrap">
@@ -267,6 +327,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* A3 — Smart recommendation */}
+            {recommendation && (
+              <p className="text-[11px] tracking-[0.35em] text-white/40 uppercase font-mono mb-4 border-l-2 border-white/20 pl-3">
+                {recommendation}
+              </p>
+            )}
+
             {dates.length === 0 ? (
               <p className="text-white/40 text-[12px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
                 INGA SVAR ÄNNU
@@ -280,6 +347,8 @@ export default function DashboardPage() {
                   const isLocked = d.id === lockedDateId;
                   const isGlitching = glitchingDateIds.has(d.id);
                   const isDimmed = !!lockedDateId && !isLocked;
+                  const showLasAlways = !lockedDateId && count > 0 && top3DateIds.has(d.id);
+                  const showLasHover = !lockedDateId && count > 0 && !top3DateIds.has(d.id);
 
                   return (
                     <div
@@ -287,7 +356,7 @@ export default function DashboardPage() {
                       className={`border px-5 py-4 group relative transition-opacity duration-300
                         ${isGlitching ? "select-glitch" : ""}
                         ${isLocked ? "border-white bg-white/8" : isTop ? "border-white/60 bg-white/3" : "border-white/15"}
-                        ${isDimmed ? "opacity-25" : ""}
+                        ${isDimmed ? "opacity-40" : ""}
                       `}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -325,10 +394,19 @@ export default function DashboardPage() {
                               /{maxResponders}
                             </span>
                           </div>
-                          {!lockedDateId && (
+                          {/* B3 — LÅS button: always visible for top 3, hover-only for rest, hidden for zero-response */}
+                          {showLasAlways && (
                             <button
                               onClick={() => { playClick(); setLockingDateId(d.id); }}
                               className="text-[10px] tracking-[0.25em] text-white/25 hover:text-white uppercase font-mono transition-colors duration-150 shrink-0 border border-white/15 hover:border-white/60 px-2 py-1"
+                            >
+                              LÅS
+                            </button>
+                          )}
+                          {showLasHover && (
+                            <button
+                              onClick={() => { playClick(); setLockingDateId(d.id); }}
+                              className="text-[10px] tracking-[0.25em] text-white/0 group-hover:text-white/25 hover:!text-white uppercase font-mono transition-colors duration-150 shrink-0 border border-transparent group-hover:border-white/10 hover:!border-white/50 px-2 py-1"
                             >
                               LÅS
                             </button>
@@ -360,7 +438,7 @@ export default function DashboardPage() {
                   <thead>
                     <tr>
                       <th className="text-[10px] tracking-widest text-white/30 uppercase font-mono pb-3 pr-4 w-36 font-normal">
-                        OPERATIV
+                        OPERATIVE
                       </th>
                       {sortedDates.map((d) => (
                         <th key={d.id} className="pb-3 px-1 font-normal">
@@ -429,12 +507,12 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* REGISTRERADE OPERATIVA */}
+          {/* REGISTRERADE OPERATIVES */}
           {friends.length > 0 && (
             <div className="border border-white/10 p-5">
               <div className="flex items-center justify-between mb-4 gap-4">
                 <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase">
-                  REGISTRERADE OPERATIVA ({friends.length})
+                  OPERATIVES ({friends.length})
                 </h2>
                 {missingFriends.length > 0 && (
                   <span className="text-[10px] tracking-[0.3em] text-red-400/60 uppercase font-mono shrink-0">
@@ -471,7 +549,7 @@ export default function DashboardPage() {
                 DEPLOYMENT LINK
               </h2>
               <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
-                DELA DENNA LÄNK MED ALLA OPERATIVA. DE REGISTRERAR SINA EGNA NAMN.
+                DELA DENNA LÄNK MED ALLA OPERATIVES. DE REGISTRERAR SINA EGNA NAMN.
               </p>
               <div className="flex items-stretch gap-0">
                 <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/40 font-mono tracking-wider truncate">
@@ -515,7 +593,7 @@ export default function DashboardPage() {
 
       {/* LOCK CONFIRMATION OVERLAY */}
       {lockingDateId && (
-        <div className="fixed inset-0 z-[9990] bg-black/92 flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[9990] bg-black flex items-center justify-center p-6">
           <div className="border border-white/30 p-8 max-w-sm w-full text-center bg-black">
             <p className="text-[11px] tracking-[0.5em] text-white/40 uppercase mb-5">
               BEKRÄFTA // LÅS DATUM

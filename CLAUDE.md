@@ -47,14 +47,17 @@ app/
   join/[hostToken]/
     page.tsx                        # Guest registers their name
   respond/[friendToken]/
-    page.tsx                        # Guest marks available dates; [VÄLJ ALLA]/[RENSA] + arrow-key nav
+    page.tsx                        # Guest marks dates; month-grouped list, [VÄLJ ALLA]/[RENSA], arrow-key nav,
+                                    # locked-date banner (A1), social signal after save (B2)
   dashboard/[hostToken]/
-    page.tsx                        # Host dashboard: results-first, 15s live poll, LISTA/GRID toggle, date locking, share card
+    page.tsx                        # Host dashboard: results-first, 15s live poll + countdown (B1), LISTA/GRID toggle,
+                                    # smart recommendation (A3), LÅS on top-3 only (B3), date locking, enriched share card (C2)
   api/
     events/route.ts                 # POST — create event + dates
     friends/route.ts                # POST — register guest by name
     availability/[friendToken]/
-      route.ts                      # GET dates+selections / POST save selections
+      route.ts                      # GET: dates+selections + lockedDate + respondedCount + totalCount
+                                    # POST: saves selections; returns respondedCount + totalCount
     dashboard/[hostToken]/
       route.ts                      # GET full dashboard data (lockedDateId + hasResponded per friend)
       lock/
@@ -136,6 +139,7 @@ They are already set in Vercel. Never commit `.env.local`.
 - `cursor: crosshair !important` on `*` — do not override this per-element.
 - All colors are OKLCH. Never use raw `#000` or `#fff`.
 - All text is `uppercase`. Swedish copy throughout.
+- Language: use OPERATIVE (singular) and OPERATIVES (plural) in English UI copy. Never OPERATIV or OPERATIVA.
 
 ### CSS classes to reuse
 

@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { GlitchText } from "@/app/components/GlitchText";
-import { playClick, playConfirm, playError, playToggle, playWelcomeBack } from "@/lib/sound";
+import { playClick, playConfirm, playError, playToggle, playWelcomeBack, playBlip } from "@/lib/sound";
 
 type CandidateDate = { id: string; date: string; selected: boolean };
+type MonthGroup = { monthKey: string; label: string; dates: CandidateDate[] };
 
 function formatDateLabel(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -17,13 +18,22 @@ function formatDateLabel(dateStr: string) {
   }).toUpperCase();
 }
 
-function formatDateShort(dateStr: string) {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("sv-SE", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).toUpperCase();
+function groupDatesByMonth(dates: CandidateDate[]): MonthGroup[] {
+  const result: MonthGroup[] = [];
+  for (const d of dates) {
+    const [year, month] = d.date.split("-");
+    const monthKey = `${year}-${month}`;
+    let group = result.find((g) => g.monthKey === monthKey);
+    if (!group) {
+      const label = new Date(parseInt(year), parseInt(month) - 1, 1)
+        .toLocaleDateString("sv-SE", { month: "long", year: "numeric" })
+        .toUpperCase();
+      group = { monthKey, label, dates: [] };
+      result.push(group);
+    }
+    group.dates.push(d);
+  }
+  return result;
 }
 
 export default function RespondPage() {
@@ -39,6 +49,10 @@ export default function RespondPage() {
   const [booted, setBooted] = useState(false);
   const [isFirstSave, setIsFirstSave] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [lockedDate, setLockedDate] = useState<{ id: string; date: string } | null>(null);
+  const [respondedCount, setRespondedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [savedRespondedCount, setSavedRespondedCount] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -50,6 +64,9 @@ export default function RespondPage() {
       setSelected(new Set(data.candidateDates.filter((d: CandidateDate) => d.selected).map((d: CandidateDate) => d.id)));
       const hasExisting = data.candidateDates.some((d: CandidateDate) => d.selected);
       setIsFirstSave(!hasExisting);
+      setLockedDate(data.lockedDate ?? null);
+      setRespondedCount(data.respondedCount ?? 0);
+      setTotalCount(data.totalCount ?? 0);
     } catch {
       setError("NETWORK ERROR.");
     } finally {
@@ -66,20 +83,28 @@ export default function RespondPage() {
     }
   }, [loading]);
 
+  // Play a blip when the locked date banner first appears
+  useEffect(() => {
+    if (lockedDate && !loading) playBlip();
+  }, [lockedDate?.id, loading]);
+
   function selectAll() {
     playClick();
     setSaved(false);
+    setSavedRespondedCount(null);
     setSelected(new Set(dates.map((d) => d.id)));
   }
 
   function clearAll() {
     playClick();
     setSaved(false);
+    setSavedRespondedCount(null);
     setSelected(new Set());
   }
 
   function toggleDate(id: string) {
     setSaved(false);
+    setSavedRespondedCount(null);
     const wasSelected = selected.has(id);
     playToggle(!wasSelected);
     setSelected((prev) => {
@@ -98,6 +123,7 @@ export default function RespondPage() {
     playClick();
     setSaving(true);
     setError("");
+    const wasFirstSave = isFirstSave;
     try {
       const res = await fetch(`/api/availability/${friendToken}`, {
         method: "POST",
@@ -110,7 +136,7 @@ export default function RespondPage() {
         setError(data.error || "SAVE FAILED.");
         return;
       }
-      if (isFirstSave) {
+      if (wasFirstSave) {
         playWelcomeBack();
         setIsFirstSave(false);
         setShowConfirm(true);
@@ -119,6 +145,12 @@ export default function RespondPage() {
         playConfirm();
       }
       setSaved(true);
+      // Use counts from POST response for accuracy
+      const rc = data.respondedCount ?? (wasFirstSave ? respondedCount + 1 : respondedCount);
+      const tc = data.totalCount ?? totalCount;
+      setSavedRespondedCount(rc);
+      setRespondedCount(rc);
+      setTotalCount(tc);
     } catch {
       playError();
       setError("NETWORK FAILURE.");
@@ -150,13 +182,16 @@ export default function RespondPage() {
     );
   }
 
+  const dateIndexMap = new Map(dates.map((d, i) => [d.id, i]));
+  const monthGroups = groupDatesByMonth(dates);
+
   return (
     <>
       <main className={`min-h-screen flex flex-col items-center justify-center px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
         <div className="w-full max-w-lg flicker">
 
           {/* Header */}
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center">
             <div
               className="logo-rsa text-[56px] leading-none tracking-tight text-white block mb-2"
               data-text="RSA"
@@ -168,12 +203,27 @@ export default function RespondPage() {
               RSA INITIERING // STATUSRAPPORT
             </p>
             <h1 className="text-[22px] tracking-[0.2em] text-white uppercase">
-              OPERATIV: {friendName}
+              OPERATIVE: {friendName}
             </h1>
             <p className="text-[12px] text-white/55 tracking-widest uppercase mt-1">
               MARKERA VILKA DATUM DU KAN
             </p>
           </div>
+
+          {/* A1 — Locked date banner */}
+          {lockedDate && (
+            <div className="border-2 border-white p-5 bg-white/5 mb-8">
+              <p className="text-[11px] tracking-[0.5em] text-white/50 uppercase mb-2">
+                OPERATION LOCKED // DATUM BEKRÄFTAT
+              </p>
+              <p className="text-[clamp(13px,2.5vw,18px)] tracking-[0.2em] text-white uppercase">
+                {formatDateLabel(lockedDate.date)}
+              </p>
+              <p className="text-[11px] tracking-[0.3em] text-white/35 uppercase font-mono mt-3">
+                DU KAN FORTFARANDE UPPDATERA DITT SVAR NEDAN
+              </p>
+            </div>
+          )}
 
           {/* Select all / clear */}
           {dates.length > 0 && (
@@ -195,66 +245,81 @@ export default function RespondPage() {
             </div>
           )}
 
-          {/* Date list */}
+          {/* A2 — Month-grouped date list */}
           {dates.length === 0 ? (
             <p className="text-white/50 text-xs tracking-widest font-mono text-center py-8 border border-white/10">
               INGA DATUM TILLGÄNGLIGA
             </p>
           ) : (
-            <div className="space-y-px">
-              {dates.map((d, i) => {
-                const isSelected = selected.has(d.id);
-                const isGlitching = glitchingId === d.id;
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    data-date-index={i}
-                    onClick={() => toggleDate(d.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowDown") {
-                        e.preventDefault();
-                        (document.querySelector(`[data-date-index="${i + 1}"]`) as HTMLElement)?.focus();
-                      } else if (e.key === "ArrowUp") {
-                        e.preventDefault();
-                        (document.querySelector(`[data-date-index="${i - 1}"]`) as HTMLElement)?.focus();
-                      }
-                    }}
-                    className={`w-full flex items-center justify-between px-5 py-4 border text-left transition-all duration-75 group
-                      ${isGlitching ? "select-glitch" : ""}
-                      ${isSelected
-                        ? "bg-white border-white text-black"
-                        : "bg-black border-white/20 text-white hover:border-white/60"
-                      }
-                    `}
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <span className={`text-[12px] font-mono shrink-0 w-5 text-right
-                        ${isSelected ? "text-black/40" : "text-white/40"}`}
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div className="min-w-0">
-                        <p className={`text-xs tracking-[0.15em] uppercase font-mono truncate
-                          ${isSelected ? "text-black" : "text-white"}`}
+            <div className="space-y-6">
+              {monthGroups.map((group) => (
+                <div key={group.monthKey}>
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="text-[11px] tracking-[0.4em] text-white/40 uppercase font-mono">
+                      {group.label}
+                    </span>
+                    <span className="text-[10px] tracking-[0.3em] text-white/20 uppercase font-mono">
+                      // {group.dates.length} DATUM
+                    </span>
+                  </div>
+                  <div className="space-y-px">
+                    {group.dates.map((d) => {
+                      const globalIndex = dateIndexMap.get(d.id) ?? 0;
+                      const isSelected = selected.has(d.id);
+                      const isGlitching = glitchingId === d.id;
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          data-date-index={globalIndex}
+                          onClick={() => toggleDate(d.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              (document.querySelector(`[data-date-index="${globalIndex + 1}"]`) as HTMLElement)?.focus();
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              (document.querySelector(`[data-date-index="${globalIndex - 1}"]`) as HTMLElement)?.focus();
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between px-5 py-4 border text-left transition-all duration-75 group
+                            ${isGlitching ? "select-glitch" : ""}
+                            ${isSelected
+                              ? "bg-white border-white text-black"
+                              : "bg-black border-white/20 text-white hover:border-white/60"
+                            }
+                          `}
                         >
-                          {formatDateLabel(d.date)}
-                        </p>
-                      </div>
-                    </div>
+                          <div className="flex items-center gap-4 min-w-0">
+                            <span className={`text-[12px] font-mono shrink-0 w-5 text-right
+                              ${isSelected ? "text-black/40" : "text-white/40"}`}
+                            >
+                              {String(globalIndex + 1).padStart(2, "0")}
+                            </span>
+                            <div className="min-w-0">
+                              <p className={`text-xs tracking-[0.15em] uppercase font-mono truncate
+                                ${isSelected ? "text-black" : "text-white"}`}
+                              >
+                                {formatDateLabel(d.date)}
+                              </p>
+                            </div>
+                          </div>
 
-                    <div className={`shrink-0 w-5 h-5 border-2 flex items-center justify-center ml-4 transition-all duration-75
-                      ${isSelected ? "border-black bg-black" : "border-white/30 group-hover:border-white/70"}`}
-                    >
-                      {isSelected && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                          <path strokeLinecap="square" strokeLinejoin="miter" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+                          <div className={`shrink-0 w-5 h-5 border-2 flex items-center justify-center ml-4 transition-all duration-75
+                            ${isSelected ? "border-black bg-black" : "border-white/30 group-hover:border-white/70"}`}
+                          >
+                            {isSelected && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                <path strokeLinecap="square" strokeLinejoin="miter" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -274,9 +339,15 @@ export default function RespondPage() {
             </p>
           )}
 
+          {/* B2 — Social signal / saved confirmation */}
           {saved && !showConfirm && (
-            <div className="border border-white/30 text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 py-4 mt-5 bg-white/5">
-              [OK] TILLGÄNGLIGHET SPARAD. DU KAN UPPDATERA NÄR SOM HELST.
+            <div className="border border-white/30 text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 py-4 mt-5 bg-white/5 space-y-1">
+              <p>[OK] TILLGÄNGLIGHET SPARAD.</p>
+              {savedRespondedCount !== null && totalCount > 0 && (
+                <p className="text-white/40">
+                  {savedRespondedCount}/{totalCount} OPERATIVE{totalCount !== 1 ? "S" : ""} HAR SVARAT
+                </p>
+              )}
             </div>
           )}
 

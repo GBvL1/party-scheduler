@@ -19,7 +19,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("name")
+    .select("name, locked_date_id")
     .eq("id", friend.event_id)
     .single();
 
@@ -46,9 +46,39 @@ export async function GET(
     (availabilities ?? []).map((a) => a.candidate_date_id)
   );
 
+  // Resolve locked date details
+  let lockedDate: { id: string; date: string } | null = null;
+  if (event.locked_date_id) {
+    const { data: ld } = await supabase
+      .from("candidate_dates")
+      .select("id, date")
+      .eq("id", event.locked_date_id)
+      .single();
+    lockedDate = ld ?? null;
+  }
+
+  // Response counts for social signal
+  const { data: allFriends } = await supabase
+    .from("friends")
+    .select("id")
+    .eq("event_id", friend.event_id);
+
+  const allFriendIds = (allFriends ?? []).map((f) => f.id);
+  let respondedCount = 0;
+  if (allFriendIds.length > 0) {
+    const { data: responded } = await supabase
+      .from("availabilities")
+      .select("friend_id")
+      .in("friend_id", allFriendIds);
+    respondedCount = new Set((responded ?? []).map((r) => r.friend_id)).size;
+  }
+
   return NextResponse.json({
     friendName: friend.name,
     eventName: event.name,
+    lockedDate,
+    respondedCount,
+    totalCount: allFriendIds.length,
     candidateDates: (candidateDates ?? []).map((cd) => ({
       id: cd.id,
       date: cd.date,
@@ -78,7 +108,6 @@ export async function POST(
     return NextResponse.json({ error: "Invalid link." }, { status: 404 });
   }
 
-  // Verify all dateIds belong to this event
   if (selectedDateIds.length > 0) {
     const { data: validDates } = await supabase
       .from("candidate_dates")
@@ -94,7 +123,6 @@ export async function POST(
     }
   }
 
-  // Delete all existing availabilities for this friend and replace
   const { error: deleteError } = await supabase
     .from("availabilities")
     .delete()
@@ -118,5 +146,25 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ success: true });
+  // Return updated response counts for social signal
+  const { data: allFriends } = await supabase
+    .from("friends")
+    .select("id")
+    .eq("event_id", friend.event_id);
+
+  const allFriendIds = (allFriends ?? []).map((f) => f.id);
+  let respondedCount = 0;
+  if (allFriendIds.length > 0) {
+    const { data: responded } = await supabase
+      .from("availabilities")
+      .select("friend_id")
+      .in("friend_id", allFriendIds);
+    respondedCount = new Set((responded ?? []).map((r) => r.friend_id)).size;
+  }
+
+  return NextResponse.json({
+    success: true,
+    respondedCount,
+    totalCount: allFriendIds.length,
+  });
 }

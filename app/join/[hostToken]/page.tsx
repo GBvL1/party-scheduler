@@ -165,7 +165,7 @@ export default function JoinPage() {
             </div>
             <div className="w-full h-px bg-white/30 my-6" />
             <p className="text-[11px] tracking-[0.5em] text-white/40 uppercase mb-4">
-              OPERATIV IGENKÄND // ACCESS GRANTED
+              OPERATIVE IGENKÄND // ACCESS GRANTED
             </p>
             <h2 className="text-[clamp(22px,6vw,44px)] tracking-[0.25em] text-white uppercase mb-3">
               <GlitchText text="VÄLKOMMEN TILLBAKA" delay={300} speed={28} />
