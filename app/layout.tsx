@@ -10,7 +10,7 @@ const stardosStencil = Stardos_Stencil({
 });
 
 export const metadata: Metadata = {
-  title: "RSA INITIATION",
+  title: "RSA INITIERING",
   description: "RSA SER ALLT",
 };
 

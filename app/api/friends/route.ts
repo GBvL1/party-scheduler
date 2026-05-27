@@ -19,6 +19,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Event not found." }, { status: 404 });
   }
 
+  const { data: existing } = await supabase
+    .from("friends")
+    .select("id, token, name")
+    .eq("event_id", event.id)
+    .ilike("name", name.trim())
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ friendToken: existing.token, friendId: existing.id, name: existing.name });
+  }
+
   const friendToken = uuidv4();
 
   const { data: friend, error: friendError } = await supabase
@@ -34,3 +45,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ friendToken, friendId: friend.id, name: friend.name });
 }
+
