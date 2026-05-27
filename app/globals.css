@@ -34,10 +34,62 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 9998;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.75) 100%);
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.80) 100%);
 }
 
-/* ── LOGO GLITCH ──────────────────────────────────────────────────────── */
+/* Slow horizontal scan line sweeping top to bottom */
+.scanline-sweep {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 80px;
+  pointer-events: none;
+  z-index: 9997;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255, 255, 255, 0.025) 40%,
+    rgba(255, 255, 255, 0.045) 50%,
+    rgba(255, 255, 255, 0.025) 60%,
+    transparent 100%
+  );
+  animation: scanline-sweep 9s linear infinite;
+}
+
+@keyframes scanline-sweep {
+  0%   { transform: translateY(-80px); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Rare full-screen static flash */
+.static-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9996;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0.06) 0px,
+    rgba(0,0,0,0.06) 1px,
+    rgba(255,255,255,0.04) 2px,
+    rgba(0,0,0,0.08) 3px
+  );
+  opacity: 0;
+  animation: static-flash 14s infinite;
+}
+
+@keyframes static-flash {
+  0%,  91%, 100% { opacity: 0; }
+  92%  { opacity: 1; filter: brightness(4) contrast(8) grayscale(1); }
+  92.5%{ opacity: 0; }
+  93%  { opacity: 0.7; filter: brightness(2) contrast(6) grayscale(1); transform: translateX(3px); }
+  93.5%{ opacity: 0; transform: none; }
+  94%  { opacity: 0.4; filter: brightness(6) contrast(10) grayscale(1) invert(0.4); }
+  94.5%{ opacity: 0; }
+}
+
+/* ── LOGO GLITCH (fires every 3s, violent) ────────────────────────────── */
 
 .logo-rsa {
   position: relative;
@@ -57,30 +109,32 @@ body {
 
 .logo-rsa::before {
   color: rgb(255, 30, 30);
-  animation: logo-glitch-red 6s infinite;
+  animation: logo-glitch-red 3s infinite;
 }
 
 .logo-rsa::after {
   color: rgb(0, 160, 255);
-  animation: logo-glitch-blue 6s 0.08s infinite;
+  animation: logo-glitch-blue 3s 0.06s infinite;
 }
 
 @keyframes logo-glitch-red {
-  0%,  88%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
-  89% { clip-path: inset(15% 0 72% 0); transform: translateX(-5px); }
-  90% { clip-path: inset(62% 0 28% 0); transform: translateX(5px); }
-  91% { clip-path: inset(38% 0 48% 0); transform: translateX(-4px); }
-  92% { clip-path: inset(80% 0 8% 0);  transform: translateX(4px); }
-  93% { clip-path: inset(100% 0 0 0);  transform: none; }
+  0%,  82%, 100% { clip-path: inset(100% 0 0 0); transform: none; opacity: 0.9; }
+  83%  { clip-path: inset(5%  0 78% 0); transform: translateX(-7px); }
+  84%  { clip-path: inset(62% 0 20% 0); transform: translateX(7px); }
+  85%  { clip-path: inset(30% 0 55% 0); transform: translateX(-5px); }
+  86%  { clip-path: inset(85% 0 2%  0); transform: translateX(5px); }
+  87%  { clip-path: inset(45% 0 40% 0); transform: translateX(-3px); }
+  88%  { clip-path: inset(100% 0 0  0); transform: none; }
 }
 
 @keyframes logo-glitch-blue {
-  0%,  90%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
-  91% { clip-path: inset(50% 0 38% 0); transform: translateX(5px); }
-  92% { clip-path: inset(8%  0 82% 0); transform: translateX(-5px); }
-  93% { clip-path: inset(70% 0 18% 0); transform: translateX(4px); }
-  94% { clip-path: inset(28% 0 62% 0); transform: translateX(-3px); }
-  95% { clip-path: inset(100% 0 0 0);  transform: none; }
+  0%,  84%, 100% { clip-path: inset(100% 0 0 0); transform: none; opacity: 0.9; }
+  85%  { clip-path: inset(55% 0 32% 0); transform: translateX(7px); }
+  86%  { clip-path: inset(8%  0 78% 0); transform: translateX(-7px); }
+  87%  { clip-path: inset(72% 0 12% 0); transform: translateX(6px); }
+  88%  { clip-path: inset(25% 0 62% 0); transform: translateX(-5px); }
+  89%  { clip-path: inset(48% 0 38% 0); transform: translateX(3px); }
+  90%  { clip-path: inset(100% 0 0  0); transform: none; }
 }
 
 /* ── PAGE BOOT (CRT power-on) ─────────────────────────────────────────── */
@@ -124,7 +178,7 @@ body {
   animation: select-glitch 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-/* ── PAGE GLITCH (full-screen flash on submit) ────────────────────────── */
+/* ── PAGE GLITCH (full-screen on submit) ──────────────────────────────── */
 
 @keyframes page-glitch {
   0%   { filter: brightness(10) invert(0.9) contrast(12); transform: scaleX(1.02) translateX(-4px); }
@@ -142,6 +196,18 @@ body {
   animation: page-glitch 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
+/* ── BUTTON MILITARY (active press glitch) ────────────────────────────── */
+
+.btn-rsa {
+  transition: background-color 80ms, color 80ms, transform 80ms;
+}
+
+.btn-rsa:active {
+  filter: brightness(4) invert(1) contrast(6);
+  transform: translateX(3px) scaleX(0.98);
+  transition: none;
+}
+
 /* ── CURSOR BLINK ─────────────────────────────────────────────────────── */
 
 @keyframes cursor-blink {
@@ -156,13 +222,28 @@ body {
 /* ── FLICKER (subtle ambient) ─────────────────────────────────────────── */
 
 @keyframes flicker {
-  0%, 95%, 100% { opacity: 1; }
-  96%  { opacity: 0.92; }
+  0%, 93%, 100% { opacity: 1; }
+  94%  { opacity: 0.92; }
+  95%  { opacity: 1; }
+  96%  { opacity: 0.85; }
   97%  { opacity: 1; }
-  98%  { opacity: 0.88; }
-  99%  { opacity: 0.95; }
+  98%  { opacity: 0.95; }
 }
 
 .flicker {
-  animation: flicker 8s infinite;
+  animation: flicker 7s infinite;
+}
+
+/* ── CROSSHAIR PULSE ──────────────────────────────────────────────────── */
+
+@keyframes crosshair-pulse {
+  0%,  88%, 100% { opacity: 0.28; transform: translate(-50%, -50%) scale(1); }
+  89%  { opacity: 0.9;  transform: translate(-50%, -50%) scale(1.6); }
+  90%  { opacity: 0.15; transform: translate(-50%, -50%) scale(0.8); }
+  91%  { opacity: 0.7;  transform: translate(-50%, -50%) scale(1.2); }
+  92%  { opacity: 0.28; transform: translate(-50%, -50%) scale(1); }
+}
+
+.crosshair-hud {
+  animation: crosshair-pulse 5s infinite;
 }

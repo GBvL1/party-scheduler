@@ -25,8 +25,12 @@ export default function RootLayout({
         <div className="scanlines" aria-hidden="true" />
         <div className="vignette" aria-hidden="true" />
 
+        <div className="scanline-sweep" aria-hidden="true" />
+        <div className="static-flash" aria-hidden="true" />
+
         {/* Fixed crosshair HUD — center of viewport */}
         <div
+          className="crosshair-hud"
           style={{
             position: "fixed",
             top: "50%",

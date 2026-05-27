@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { GlitchText } from "./components/GlitchText";
 
 const FIXED_DATES = [
   "2026-06-07",
@@ -67,10 +68,8 @@ export default function HomePage() {
           >
             RSA
           </div>
-          <div
-            className="text-[clamp(14px,3vw,20px)] tracking-[0.45em] text-white uppercase mt-2"
-          >
-            RSA SER ALLT
+          <div className="text-[clamp(15px,3vw,22px)] tracking-[0.45em] text-white uppercase mt-3">
+            {booted && <GlitchText text="RSA SER ALLT" delay={400} speed={35} />}
           </div>
         </div>
 
@@ -78,20 +77,18 @@ export default function HomePage() {
         <div className="w-full h-px bg-white/25 my-8" />
 
         {/* Title block */}
-        <p className="text-[10px] tracking-[0.4em] text-white/35 uppercase font-mono mb-3">
+        <p className="text-[12px] tracking-[0.4em] text-white/50 uppercase mb-3">
           KLASSIFICERAT // BEHÖRIG PERSONAL ONLY
         </p>
-        <h1
-          className="text-[clamp(28px,6vw,48px)] tracking-[0.35em] text-white uppercase mb-2"
-        >
-          INITIATION
+        <h1 className="text-[clamp(28px,6vw,48px)] tracking-[0.35em] text-white uppercase mb-3">
+          {booted && <GlitchText text="INITIATION" delay={700} speed={30} />}
         </h1>
-        <p className="text-[11px] tracking-[0.3em] text-white/30 uppercase font-mono mb-10">
+        <p className="text-[12px] tracking-[0.3em] text-white/40 uppercase mb-10">
           OPERATION ID: RSA-2026 // FIELD COMMANDER ACCESS
         </p>
 
         {error && (
-          <p className="text-red-500 text-xs tracking-widest font-mono mb-6 border border-red-800 px-4 py-2 bg-red-950/30">
+          <p className="text-red-400 text-[12px] tracking-widest mb-6 border border-red-800 px-4 py-3 bg-red-950/30">
             [SYSTEM ERROR] {error}
           </p>
         )}
@@ -99,21 +96,20 @@ export default function HomePage() {
         <button
           onClick={initialize}
           disabled={loading}
-          className="relative border-2 border-white text-white uppercase tracking-[0.4em] px-14 py-4 text-sm font-bold hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          className="btn-rsa relative border-2 border-white text-white uppercase tracking-[0.4em] px-14 py-4 font-bold hover:bg-white hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ fontSize: "15px" }}
         >
           {loading ? (
             <span className="flex items-center gap-3">
-              INITIALISERAR
-              <span className="cursor-blink">_</span>
+              INITIERAR<span className="cursor-blink">_</span>
             </span>
           ) : (
-            "INITIALISERA OPERATION"
+            "INITIERA OPERATION"
           )}
         </button>
 
-        <p className="mt-10 text-[9px] tracking-[0.35em] text-white/15 uppercase font-mono">
-          DEPLOYMENT WINDOW: JUNE &ndash; JULY 2026 // 14 DATES LOADED
+        <p className="mt-10 text-[11px] tracking-[0.35em] text-white/20 uppercase">
+          DEPLOYMENT WINDOW: JUNI &ndash; JULI 2026 // 14 DATUM LADDADE
         </p>
       </div>
     </main>

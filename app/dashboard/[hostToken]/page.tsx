@@ -100,19 +100,19 @@ export default function DashboardPage() {
           >
             RSA
           </div>
-          <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase mb-1">
+          <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
             RSA INITIATION // FÄLTKOMMANDOCENTRAL
           </p>
           <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
             {eventName}
           </h1>
           <div className="flex items-center justify-center gap-6 mt-3">
-            <span className="text-[10px] tracking-widest text-white/30 uppercase">
-              {maxResponders} OPERATIVA INLOGGADE
+            <span className="text-[12px] tracking-widest text-white/50 uppercase">
+              {maxResponders} BEKRÄFTADE OPERATIVES
             </span>
             <button
               onClick={fetchDashboard}
-              className="text-[9px] tracking-widest text-white/30 hover:text-white uppercase transition-colors underline underline-offset-4"
+              className="text-[13px] tracking-widest text-white/50 hover:text-white uppercase transition-colors underline underline-offset-4"
             >
               UPPDATERA
             </button>
@@ -122,20 +122,20 @@ export default function DashboardPage() {
         {/* General Invitation Link */}
         <div className="border border-white/20 p-5">
           <h2
-            className="text-[11px] tracking-[0.4em] text-white/50 uppercase mb-1"
+            className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1"
           >
-            DEPLYOERING LÄNK
+            DEPLOYMENT LINK
           </h2>
-          <p className="text-[9px] tracking-[0.25em] text-white/25 uppercase font-mono mb-4">
+          <p className="text-[13px] tracking-[0.25em] text-white/40 uppercase font-mono mb-4">
             DELA DENNA LÄNK MED ALLA OPERATIVA. DE REGISTRERAR SINA EGNA NAMN.
           </p>
           <div className="flex items-stretch gap-0">
-            <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[10px] text-white/50 font-mono tracking-wider truncate">
+            <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/50 font-mono tracking-wider truncate">
               {typeof window !== "undefined" ? getJoinLink() : ""}
             </code>
             <button
               onClick={() => copyText(getJoinLink(), "join")}
-              className="shrink-0 border-2 border-white text-white text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
+              className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
             >
               {copied === "join" ? "KOPIERAT" : "KOPIERA"}
             </button>
@@ -145,20 +145,20 @@ export default function DashboardPage() {
         {/* Dashboard Link */}
         <div className="border border-white/10 p-5">
           <h2
-            className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-1"
+            className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1"
           >
             DIN KOMMANDOLÄNK
           </h2>
-          <p className="text-[9px] tracking-[0.25em] text-white/20 uppercase font-mono mb-4">
+          <p className="text-[13px] tracking-[0.25em] text-white/40 uppercase font-mono mb-4">
             BOKMÄRK DENNA LÄNK. UTAN DEN FÖRLORAR DU ÅTKOMST.
           </p>
           <div className="flex items-stretch gap-0">
-            <code className="flex-1 bg-white/3 border border-white/10 px-3 py-3 text-[10px] text-white/30 font-mono tracking-wider truncate">
+            <code className="flex-1 bg-white/3 border border-white/10 px-3 py-3 text-[12px] text-white/50 font-mono tracking-wider truncate">
               {typeof window !== "undefined" ? getDashboardLink() : ""}
             </code>
             <button
               onClick={() => copyText(getDashboardLink(), "dashboard")}
-              className="shrink-0 border border-white/30 text-white/40 text-[10px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
+              className="shrink-0 border border-white/30 text-white/40 text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
             >
               {copied === "dashboard" ? "KOPIERAT" : "KOPIERA"}
             </button>
@@ -169,14 +169,14 @@ export default function DashboardPage() {
         {friends.length > 0 && (
           <div className="border border-white/10 p-5">
             <h2
-              className="text-[11px] tracking-[0.4em] text-white/30 uppercase mb-4"
+              className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-4"
             >
               REGISTRERADE OPERATIVA ({friends.length})
             </h2>
             <div className="space-y-px">
               {friends.map((f, i) => (
                 <div key={f.id} className="flex items-center gap-4 py-2 border-b border-white/5">
-                  <span className="text-[9px] font-mono text-white/20 w-5 text-right shrink-0">
+                  <span className="text-[13px] font-mono text-white/40 w-5 text-right shrink-0">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span className="text-xs tracking-[0.2em] text-white/50 uppercase font-mono">
@@ -192,14 +192,14 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2
-              className="text-[11px] tracking-[0.4em] text-white/50 uppercase"
+              className="text-[13px] tracking-[0.4em] text-white/50 uppercase"
             >
               INTEL RAPPORT // TILLGÄNGLIGHET
             </h2>
           </div>
 
           {dates.length === 0 ? (
-            <p className="text-white/20 text-[10px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
+            <p className="text-white/40 text-[12px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
               INGA SVAR ÄNNU
             </p>
           ) : (
@@ -215,23 +215,23 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-4 min-w-0">
-                        <span className={`text-[10px] font-mono shrink-0 w-5 text-right mt-0.5
-                          ${isTop ? "text-white/50" : "text-white/20"}`}
+                        <span className={`text-[12px] font-mono shrink-0 w-5 text-right mt-0.5
+                          ${isTop ? "text-white/50" : "text-white/40"}`}
                         >
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <div className="min-w-0">
-                          <p className={`text-[11px] tracking-[0.15em] uppercase font-mono
+                          <p className={`text-[13px] tracking-[0.15em] uppercase font-mono
                             ${isTop ? "text-white" : "text-white/50"}`}
                           >
                             {formatDateLabel(d.date)}
                           </p>
                           {d.availableFriends.length > 0 ? (
-                            <p className="text-[9px] tracking-widest text-white/30 uppercase font-mono mt-1">
+                            <p className="text-[13px] tracking-widest text-white/50 uppercase font-mono mt-1">
                               {d.availableFriends.join(" // ")}
                             </p>
                           ) : (
-                            <p className="text-[9px] tracking-widest text-white/15 uppercase font-mono mt-1 italic">
+                            <p className="text-[13px] tracking-widest text-white/15 uppercase font-mono mt-1 italic">
                               INGA SVAR
                             </p>
                           )}
@@ -239,11 +239,11 @@ export default function DashboardPage() {
                       </div>
                       <div className="shrink-0 text-right">
                         <span className={`text-2xl font-bold tracking-tight
-                          ${isTop ? "text-white" : "text-white/30"}`}
+                          ${isTop ? "text-white" : "text-white/50"}`}
                         >
                           {count}
                         </span>
-                        <span className="text-[10px] text-white/20 font-mono">
+                        <span className="text-[12px] text-white/40 font-mono">
                           /{maxResponders}
                         </span>
                       </div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <p className="text-[9px] tracking-[0.3em] text-white/10 uppercase font-mono text-center pb-4">
+        <p className="text-[13px] tracking-[0.3em] text-white/10 uppercase font-mono text-center pb-4">
           RSA SER ALLT // KLASSIFICERAT // {new Date().getFullYear()}
         </p>
       </div>
