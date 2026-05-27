@@ -28,10 +28,16 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [ambientGlitch, setAmbientGlitch] = useState(false);
+  const [resumeToken, setResumeToken] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setBooted(true), 40);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("rsa_host_token");
+    if (token) setResumeToken(token);
   }, []);
 
   useEffect(() => {
@@ -130,6 +136,18 @@ export default function HomePage() {
             "INITIERA OPERATION"
           )}
         </button>
+
+        {resumeToken && (
+          <div className="mt-6">
+            <a
+              href={`/dashboard/${resumeToken}`}
+              onClick={() => playClick()}
+              className="text-[11px] tracking-[0.4em] text-white/30 hover:text-white/60 uppercase underline underline-offset-4 transition-colors duration-100"
+            >
+              ÅTERUPPTA OPERATION →
+            </a>
+          </div>
+        )}
 
         <p className="mt-10 text-[11px] tracking-[0.35em] text-white/20 uppercase">
           DEPLOYMENT WINDOW: JUNI &ndash; JULI 2026 // 14 DATUM LADDADE

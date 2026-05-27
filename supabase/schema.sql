@@ -4,7 +4,8 @@ create table if not exists events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   host_token text not null unique,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  locked_date_id uuid references candidate_dates(id)
 );
 
 create table if not exists candidate_dates (

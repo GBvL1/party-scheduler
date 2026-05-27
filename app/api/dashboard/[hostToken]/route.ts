@@ -9,7 +9,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, name, created_at")
+    .select("id, name, created_at, locked_date_id")
     .eq("host_token", hostToken)
     .single();
 
@@ -48,6 +48,7 @@ export async function GET(
   // Build a map: dateId -> [friend names]
   const friendMap = new Map((friends ?? []).map((f) => [f.id, f.name]));
   const dateAvailability = new Map<string, string[]>();
+  const respondedFriendIds = new Set((availabilities ?? []).map((a) => a.friend_id));
 
   for (const cd of candidateDates ?? []) {
     dateAvailability.set(cd.id, []);
@@ -71,7 +72,13 @@ export async function GET(
   return NextResponse.json({
     eventName: event.name,
     createdAt: event.created_at,
-    friends: (friends ?? []).map((f) => ({ id: f.id, name: f.name, token: f.token })),
+    lockedDateId: event.locked_date_id ?? null,
+    friends: (friends ?? []).map((f) => ({
+      id: f.id,
+      name: f.name,
+      token: f.token,
+      hasResponded: respondedFriendIds.has(f.id),
+    })),
     dates: datesWithCounts,
   });
 }

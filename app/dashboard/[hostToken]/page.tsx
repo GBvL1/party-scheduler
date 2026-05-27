@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
-import { playClick, playConfirm } from "@/lib/sound";
+import { GlitchText } from "@/app/components/GlitchText";
+import { playClick, playConfirm, playBlip, playWelcomeBack } from "@/lib/sound";
 
-type Friend = { id: string; name: string; token: string };
+type Friend = { id: string; name: string; token: string; hasResponded: boolean };
 type DateEntry = { id: string; date: string; availableFriends: string[] };
+type ViewMode = "list" | "matrix";
 
 function formatDateLabel(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -17,32 +19,82 @@ function formatDateLabel(dateStr: string) {
   }).toUpperCase();
 }
 
+function formatDateMicro(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("sv-SE", {
+    month: "short",
+    day: "numeric",
+  }).toUpperCase().replace(".", "");
+}
+
 export default function DashboardPage() {
   const { hostToken } = useParams<{ hostToken: string }>();
   const [eventName, setEventName] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
   const [dates, setDates] = useState<DateEntry[]>([]);
+  const [lockedDateId, setLockedDateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [lockingDateId, setLockingDateId] = useState<string | null>(null);
+  const [showLockOverlay, setShowLockOverlay] = useState(false);
+  const [glitchingDateIds, setGlitchingDateIds] = useState<Set<string>>(new Set());
+  const prevDatesRef = useRef<DateEntry[]>([]);
 
-  const fetchDashboard = useCallback(async () => {
+  const applyData = useCallback((data: any, silent: boolean) => {
+    if (!silent) {
+      setEventName(data.eventName);
+    }
+
+    if (silent && prevDatesRef.current.length > 0) {
+      const prevMap = new Map(prevDatesRef.current.map((d) => [d.id, d.availableFriends.length]));
+      const changed = new Set<string>();
+      for (const d of data.dates ?? []) {
+        if (prevMap.get(d.id) !== d.availableFriends.length) changed.add(d.id);
+      }
+      if (changed.size > 0) {
+        playBlip();
+        setGlitchingDateIds(changed);
+        setTimeout(() => setGlitchingDateIds(new Set()), 500);
+      }
+    }
+
+    setFriends(data.friends ?? []);
+    setDates(data.dates ?? []);
+    setLockedDateId(data.lockedDateId ?? null);
+    prevDatesRef.current = data.dates ?? [];
+  }, []);
+
+  const fetchDashboard = useCallback(async (silent = false) => {
     try {
       const res = await fetch(`/api/dashboard/${hostToken}`);
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "FAILED TO LOAD."); return; }
-      setEventName(data.eventName);
-      setFriends(data.friends);
-      setDates(data.dates);
+      if (!res.ok) {
+        if (!silent) setError(data.error || "FAILED TO LOAD.");
+        return;
+      }
+      applyData(data, silent);
     } catch {
-      setError("NETWORK ERROR.");
+      if (!silent) setError("NETWORK ERROR.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [hostToken]);
+  }, [hostToken, applyData]);
 
-  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+  useEffect(() => { fetchDashboard(false); }, [fetchDashboard]);
+
+  useEffect(() => {
+    const id = setInterval(() => fetchDashboard(true), 15000);
+    return () => clearInterval(id);
+  }, [fetchDashboard]);
+
+  useEffect(() => {
+    if (!loading && !error) {
+      localStorage.setItem("rsa_host_token", hostToken);
+    }
+  }, [loading, error, hostToken]);
 
   useEffect(() => {
     if (!loading) {
@@ -50,6 +102,25 @@ export default function DashboardPage() {
       return () => clearTimeout(t);
     }
   }, [loading]);
+
+  async function lockDate(dateId: string | null) {
+    playClick();
+    try {
+      const res = await fetch(`/api/dashboard/${hostToken}/lock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dateId }),
+      });
+      if (!res.ok) return;
+      setLockedDateId(dateId);
+      setLockingDateId(null);
+      if (dateId) {
+        playWelcomeBack();
+        setShowLockOverlay(true);
+        setTimeout(() => setShowLockOverlay(false), 2800);
+      }
+    } catch {}
+  }
 
   function getJoinLink() {
     return `${window.location.origin}/join/${hostToken}`;
@@ -67,7 +138,17 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
+  function buildShareMessage(dateId: string) {
+    const entry = dates.find((d) => d.id === dateId);
+    if (!entry) return "";
+    return `RSA INITIERING // DATUM BEKRÄFTAT\n\n${formatDateLabel(entry.date)}\n\n// RSA SER ALLT`;
+  }
+
   const maxResponders = friends.length;
+  const respondedCount = friends.filter((f) => f.hasResponded).length;
+  const missingFriends = friends.filter((f) => !f.hasResponded);
+  const sortedDates = [...dates].sort((a, b) => b.availableFriends.length - a.availableFriends.length);
+  const lockedDate = lockedDateId ? dates.find((d) => d.id === lockedDateId) : null;
 
   if (loading) {
     return (
@@ -89,188 +170,401 @@ export default function DashboardPage() {
     );
   }
 
-  const sortedDates = [...dates].sort((a, b) => b.availableFriends.length - a.availableFriends.length);
-
   return (
-    <main className={`min-h-screen px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
-      <div className="max-w-3xl mx-auto space-y-8 flicker">
+    <>
+      <main className={`min-h-screen px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
+        <div className="max-w-3xl mx-auto space-y-8 flicker">
 
-        {/* Header */}
-        <div className="border-b border-white/20 pb-8 text-center">
-          <div
-            className="logo-rsa text-[64px] leading-none tracking-tight text-white block mb-2"
-            data-text="RSA"
-          >
-            RSA
-          </div>
-          <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-            RSA INITIERING // FÄLTKOMMANDOCENTRAL
-          </p>
-          <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
-            {eventName}
-          </h1>
-          <div className="flex items-center justify-center gap-6 mt-3">
-            <span className="text-[12px] tracking-widest text-white/50 uppercase">
-              {maxResponders} BEKRÄFTADE OPERATIVES
-            </span>
-            <button
-              onClick={() => { playClick(); fetchDashboard(); }}
-              className="text-[13px] tracking-widest text-white/50 hover:text-white uppercase transition-colors underline underline-offset-4"
+          {/* HEADER */}
+          <div className="border-b border-white/20 pb-8 text-center">
+            <div
+              className="logo-rsa text-[64px] leading-none tracking-tight text-white block mb-2"
+              data-text="RSA"
             >
-              UPPDATERA
-            </button>
-          </div>
-        </div>
-
-        {/* General Invitation Link */}
-        <div className="border border-white/20 p-5">
-          <h2
-            className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1"
-          >
-            DEPLOYMENT LINK
-          </h2>
-          <p className="text-[13px] tracking-[0.25em] text-white/40 uppercase font-mono mb-4">
-            DELA DENNA LÄNK MED ALLA OPERATIVA. DE REGISTRERAR SINA EGNA NAMN.
-          </p>
-          <div className="flex items-stretch gap-0">
-            <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/50 font-mono tracking-wider truncate">
-              {typeof window !== "undefined" ? getJoinLink() : ""}
-            </code>
-            <button
-              onClick={() => copyText(getJoinLink(), "join")}
-              className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
-            >
-              {copied === "join" ? "KOPIERAT" : "KOPIERA"}
-            </button>
-          </div>
-        </div>
-
-        {/* Dashboard Link */}
-        <div className="border border-white/10 p-5">
-          <h2
-            className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1"
-          >
-            DIN KOMMANDOLÄNK
-          </h2>
-          <p className="text-[13px] tracking-[0.25em] text-white/40 uppercase font-mono mb-4">
-            BOKMÄRK DENNA LÄNK. UTAN DEN FÖRLORAR DU ÅTKOMST.
-          </p>
-          <div className="flex items-stretch gap-0">
-            <code className="flex-1 bg-white/3 border border-white/10 px-3 py-3 text-[12px] text-white/50 font-mono tracking-wider truncate">
-              {typeof window !== "undefined" ? getDashboardLink() : ""}
-            </code>
-            <button
-              onClick={() => copyText(getDashboardLink(), "dashboard")}
-              className="shrink-0 border border-white/30 text-white/40 text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
-            >
-              {copied === "dashboard" ? "KOPIERAT" : "KOPIERA"}
-            </button>
-          </div>
-        </div>
-
-        {/* Registered operatives */}
-        {friends.length > 0 && (
-          <div className="border border-white/10 p-5">
-            <h2
-              className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-4"
-            >
-              REGISTRERADE OPERATIVA ({friends.length})
-            </h2>
-            <div className="space-y-px">
-              {friends.map((f, i) => (
-                <div key={f.id} className="flex items-center gap-4 py-2 border-b border-white/5">
-                  <span className="text-[13px] font-mono text-white/40 w-5 text-right shrink-0">
-                    {String(i + 1).padStart(2, "0")}
+              RSA
+            </div>
+            <p className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+              RSA INITIERING // FÄLTKOMMANDOCENTRAL
+            </p>
+            <h1 className="text-[28px] tracking-[0.25em] text-white uppercase">
+              {eventName}
+            </h1>
+            <div className="flex items-center justify-center gap-5 mt-3 flex-wrap">
+              <span className="text-[12px] tracking-widest text-white/50 uppercase">
+                {maxResponders} OPERATIVES
+              </span>
+              <span className="text-white/20">·</span>
+              <span className="text-[12px] tracking-widest text-white/50 uppercase">
+                {respondedCount}/{maxResponders} SVAR
+              </span>
+              {lockedDateId && (
+                <>
+                  <span className="text-white/20">·</span>
+                  <span className="text-[12px] tracking-widest text-white uppercase">
+                    ■ LOCKED
                   </span>
-                  <span className="text-xs tracking-[0.2em] text-white/50 uppercase font-mono">
-                    {f.name}
-                  </span>
-                </div>
-              ))}
+                </>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Availability Results */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="text-[13px] tracking-[0.4em] text-white/50 uppercase"
-            >
-              INTEL RAPPORT // TILLGÄNGLIGHET
-            </h2>
-          </div>
+          {/* LOCKED DATE BANNER */}
+          {lockedDate && (
+            <div className="border-2 border-white p-5 bg-white/5">
+              <p className="text-[11px] tracking-[0.5em] text-white/50 uppercase mb-2">
+                OPERATION LOCKED // DATUM BEKRÄFTAT
+              </p>
+              <h2 className="text-[clamp(14px,2.5vw,22px)] tracking-[0.2em] text-white uppercase mb-1">
+                {formatDateLabel(lockedDate.date)}
+              </h2>
+              <p className="text-[12px] tracking-widest text-white/40 font-mono mb-4 uppercase">
+                {lockedDate.availableFriends.length}/{maxResponders} TILLGÄNGLIGA
+                {lockedDate.availableFriends.length > 0 && (
+                  <> // {lockedDate.availableFriends.join(" · ")}</>
+                )}
+              </p>
+              <pre className="bg-black border border-white/15 px-4 py-3 text-[11px] text-white/40 font-mono tracking-wider mb-4 whitespace-pre-wrap">
+                {buildShareMessage(lockedDate.id)}
+              </pre>
+              <div className="flex items-center gap-5 flex-wrap">
+                <button
+                  onClick={() => copyText(buildShareMessage(lockedDate.id), "share")}
+                  className="btn-rsa border-2 border-white text-white uppercase tracking-[0.3em] px-6 py-2 text-[12px] font-bold hover:bg-white hover:text-black"
+                >
+                  {copied === "share" ? "KOPIERAT" : "KOPIERA KALLELSE"}
+                </button>
+                <button
+                  onClick={() => lockDate(null)}
+                  className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/60 uppercase underline underline-offset-4 transition-colors duration-100"
+                >
+                  LÅS UPP
+                </button>
+              </div>
+            </div>
+          )}
 
-          {dates.length === 0 ? (
-            <p className="text-white/40 text-[12px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
-              INGA SVAR ÄNNU
-            </p>
-          ) : (
-            <div className="space-y-px">
-              {sortedDates.map((d, i) => {
-                const count = d.availableFriends.length;
-                const pct = maxResponders > 0 ? (count / maxResponders) * 100 : 0;
-                const isTop = i === 0 && count > 0;
-                return (
-                  <div
-                    key={d.id}
-                    className={`border px-5 py-4 ${isTop ? "border-white bg-white/5" : "border-white/15"}`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 min-w-0">
-                        <span className={`text-[12px] font-mono shrink-0 w-5 text-right mt-0.5
-                          ${isTop ? "text-white/50" : "text-white/40"}`}
-                        >
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <div className="min-w-0">
-                          <p className={`text-[13px] tracking-[0.15em] uppercase font-mono
-                            ${isTop ? "text-white" : "text-white/50"}`}
+          {/* INTEL RAPPORT */}
+          <div>
+            <div className="flex items-center justify-between mb-4 gap-4">
+              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase">
+                INTEL RAPPORT // TILLGÄNGLIGHET
+              </h2>
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={() => { playClick(); setViewMode("list"); }}
+                  className={`text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 border transition-all duration-100
+                    ${viewMode === "list" ? "border-white text-white" : "border-white/20 text-white/30 hover:border-white/40 hover:text-white/50"}`}
+                >
+                  LISTA
+                </button>
+                <button
+                  onClick={() => { playClick(); setViewMode("matrix"); }}
+                  className={`text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 border transition-all duration-100
+                    ${viewMode === "matrix" ? "border-white text-white" : "border-white/20 text-white/30 hover:border-white/40 hover:text-white/50"}`}
+                >
+                  GRID
+                </button>
+              </div>
+            </div>
+
+            {dates.length === 0 ? (
+              <p className="text-white/40 text-[12px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
+                INGA SVAR ÄNNU
+              </p>
+            ) : viewMode === "list" ? (
+              <div className="space-y-px">
+                {sortedDates.map((d, i) => {
+                  const count = d.availableFriends.length;
+                  const pct = maxResponders > 0 ? (count / maxResponders) * 100 : 0;
+                  const isTop = i === 0 && count > 0 && !lockedDateId;
+                  const isLocked = d.id === lockedDateId;
+                  const isGlitching = glitchingDateIds.has(d.id);
+                  const isDimmed = !!lockedDateId && !isLocked;
+
+                  return (
+                    <div
+                      key={d.id}
+                      className={`border px-5 py-4 group relative transition-opacity duration-300
+                        ${isGlitching ? "select-glitch" : ""}
+                        ${isLocked ? "border-white bg-white/8" : isTop ? "border-white/60 bg-white/3" : "border-white/15"}
+                        ${isDimmed ? "opacity-25" : ""}
+                      `}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4 min-w-0">
+                          <span className={`text-[12px] font-mono shrink-0 w-5 text-right mt-0.5
+                            ${isLocked || isTop ? "text-white/50" : "text-white/30"}`}
                           >
-                            {formatDateLabel(d.date)}
-                          </p>
-                          {d.availableFriends.length > 0 ? (
-                            <p className="text-[13px] tracking-widest text-white/50 uppercase font-mono mt-1">
-                              {d.availableFriends.join(" // ")}
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <div className="min-w-0">
+                            <p className={`text-[13px] tracking-[0.15em] uppercase font-mono
+                              ${isLocked || isTop ? "text-white" : "text-white/50"}`}
+                            >
+                              {formatDateLabel(d.date)}
                             </p>
-                          ) : (
-                            <p className="text-[13px] tracking-widest text-white/15 uppercase font-mono mt-1 italic">
-                              INGA SVAR
-                            </p>
+                            {d.availableFriends.length > 0 ? (
+                              <p className="text-[12px] tracking-widest text-white/40 uppercase font-mono mt-1">
+                                {d.availableFriends.join(" // ")}
+                              </p>
+                            ) : (
+                              <p className="text-[12px] tracking-widest text-white/15 uppercase font-mono mt-1 italic">
+                                INGA SVAR
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right flex items-center gap-3">
+                          <div>
+                            <span className={`text-2xl font-bold tracking-tight
+                              ${isLocked || isTop ? "text-white" : "text-white/40"}`}
+                            >
+                              {count}
+                            </span>
+                            <span className="text-[12px] text-white/25 font-mono">
+                              /{maxResponders}
+                            </span>
+                          </div>
+                          {!lockedDateId && (
+                            <button
+                              onClick={() => { playClick(); setLockingDateId(d.id); }}
+                              className="text-[10px] tracking-[0.25em] text-white/0 group-hover:text-white/35 hover:!text-white uppercase font-mono transition-colors duration-150 shrink-0 border border-transparent group-hover:border-white/20 hover:!border-white/50 px-2 py-1"
+                            >
+                              LÅS
+                            </button>
+                          )}
+                          {isLocked && (
+                            <span className="text-[10px] tracking-[0.25em] text-white uppercase font-mono border border-white/40 px-2 py-1 shrink-0">
+                              LÅST
+                            </span>
                           )}
                         </div>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <span className={`text-2xl font-bold tracking-tight
-                          ${isTop ? "text-white" : "text-white/50"}`}
-                        >
-                          {count}
-                        </span>
-                        <span className="text-[12px] text-white/40 font-mono">
-                          /{maxResponders}
-                        </span>
-                      </div>
-                    </div>
 
-                    {maxResponders > 0 && (
-                      <div className="mt-3 h-px bg-white/10">
-                        <div
-                          className="h-full bg-white transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      {maxResponders > 0 && (
+                        <div className="mt-3 h-0.5 bg-white/8">
+                          <div
+                            className={`h-full transition-all duration-500 ${isLocked ? "bg-white" : "bg-white/60"}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* MATRIX / GRID VIEW */
+              <div className="overflow-x-auto">
+                <table className="text-left border-collapse" style={{ minWidth: `${180 + sortedDates.length * 52}px` }}>
+                  <thead>
+                    <tr>
+                      <th className="text-[10px] tracking-widest text-white/30 uppercase font-mono pb-3 pr-4 w-36 font-normal">
+                        OPERATIV
+                      </th>
+                      {sortedDates.map((d) => (
+                        <th key={d.id} className="pb-3 px-1 font-normal">
+                          <div className={`text-[9px] tracking-wider uppercase font-mono text-center leading-tight
+                            ${d.id === lockedDateId ? "text-white" : "text-white/30"}`}
+                          >
+                            {formatDateMicro(d.date)}
+                          </div>
+                        </th>
+                      ))}
+                      <th className="text-[10px] tracking-widest text-white/30 uppercase font-mono pb-3 pl-4 font-normal text-right">
+                        ∑
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {friends.map((f) => {
+                      const friendTotal = sortedDates.filter((d) => d.availableFriends.includes(f.name)).length;
+                      return (
+                        <tr key={f.id} className="border-t border-white/8">
+                          <td className={`text-[11px] tracking-[0.12em] uppercase font-mono py-2.5 pr-4
+                            ${f.hasResponded ? "text-white/50" : "text-white/20"}`}
+                          >
+                            {f.name}
+                          </td>
+                          {sortedDates.map((d) => {
+                            const available = d.availableFriends.includes(f.name);
+                            const isLockedCol = d.id === lockedDateId;
+                            return (
+                              <td key={d.id} className="py-2.5 px-1 text-center">
+                                <div className={`w-5 h-5 mx-auto border transition-colors duration-200
+                                  ${available
+                                    ? isLockedCol ? "bg-white border-white" : "bg-white/65 border-white/65"
+                                    : isLockedCol ? "border-white/30 bg-white/5" : "border-white/10"
+                                  }`}
+                                />
+                              </td>
+                            );
+                          })}
+                          <td className={`text-[11px] font-mono font-bold py-2.5 pl-4 text-right
+                            ${f.hasResponded ? "text-white/50" : "text-white/15"}`}
+                          >
+                            {f.hasResponded ? friendTotal : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t border-white/20">
+                      <td className="text-[10px] tracking-widest text-white/30 uppercase font-mono py-3 pr-4">
+                        TOTAL
+                      </td>
+                      {sortedDates.map((d) => (
+                        <td key={d.id} className="py-3 px-1 text-center">
+                          <span className={`text-[12px] font-mono font-bold
+                            ${d.id === lockedDateId ? "text-white" : "text-white/40"}`}
+                          >
+                            {d.availableFriends.length}
+                          </span>
+                        </td>
+                      ))}
+                      <td />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* REGISTRERADE OPERATIVA */}
+          {friends.length > 0 && (
+            <div className="border border-white/10 p-5">
+              <div className="flex items-center justify-between mb-4 gap-4">
+                <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase">
+                  REGISTRERADE OPERATIVA ({friends.length})
+                </h2>
+                {missingFriends.length > 0 && (
+                  <span className="text-[10px] tracking-[0.3em] text-red-400/60 uppercase font-mono shrink-0">
+                    {missingFriends.length} AVVAKTAR
+                  </span>
+                )}
+              </div>
+              <div className="space-y-px">
+                {friends.map((f, i) => (
+                  <div key={f.id} className="flex items-center gap-4 py-2 border-b border-white/5">
+                    <span className="text-[13px] font-mono text-white/30 w-5 text-right shrink-0">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className={`text-xs tracking-[0.2em] uppercase font-mono flex-1
+                      ${f.hasResponded ? "text-white/50" : "text-white/20"}`}
+                    >
+                      {f.name}
+                    </span>
+                    {!f.hasResponded && (
+                      <span className="text-[10px] tracking-[0.3em] text-red-400/50 uppercase font-mono shrink-0">
+                        AVVAKTAR
+                      </span>
                     )}
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
-        </div>
 
-        <p className="text-[13px] tracking-[0.3em] text-white/10 uppercase font-mono text-center pb-4">
-          RSA SER ALLT // KLASSIFICERAT // {new Date().getFullYear()}
-        </p>
-      </div>
-    </main>
+          {/* LOGISTICS */}
+          <div className="space-y-4">
+            <div className="border border-white/20 p-5">
+              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+                DEPLOYMENT LINK
+              </h2>
+              <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
+                DELA DENNA LÄNK MED ALLA OPERATIVA. DE REGISTRERAR SINA EGNA NAMN.
+              </p>
+              <div className="flex items-stretch gap-0">
+                <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/40 font-mono tracking-wider truncate">
+                  {typeof window !== "undefined" ? getJoinLink() : ""}
+                </code>
+                <button
+                  onClick={() => copyText(getJoinLink(), "join")}
+                  className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
+                >
+                  {copied === "join" ? "KOPIERAT" : "KOPIERA"}
+                </button>
+              </div>
+            </div>
+
+            <div className="border border-white/10 p-5">
+              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+                DIN KOMMANDOLÄNK
+              </h2>
+              <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
+                BOKMÄRK DENNA LÄNK. UTAN DEN FÖRLORAR DU ÅTKOMST.
+              </p>
+              <div className="flex items-stretch gap-0">
+                <code className="flex-1 bg-white/3 border border-white/10 px-3 py-3 text-[12px] text-white/30 font-mono tracking-wider truncate">
+                  {typeof window !== "undefined" ? getDashboardLink() : ""}
+                </code>
+                <button
+                  onClick={() => copyText(getDashboardLink(), "dashboard")}
+                  className="shrink-0 border border-white/30 text-white/40 text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:border-white hover:text-white transition-all duration-100"
+                >
+                  {copied === "dashboard" ? "KOPIERAT" : "KOPIERA"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[13px] tracking-[0.3em] text-white/10 uppercase font-mono text-center pb-4">
+            RSA SER ALLT // KLASSIFICERAT // {new Date().getFullYear()}
+          </p>
+        </div>
+      </main>
+
+      {/* LOCK CONFIRMATION OVERLAY */}
+      {lockingDateId && (
+        <div className="fixed inset-0 z-[9990] bg-black/92 flex items-center justify-center p-6">
+          <div className="border border-white/30 p-8 max-w-sm w-full text-center bg-black">
+            <p className="text-[11px] tracking-[0.5em] text-white/40 uppercase mb-5">
+              BEKRÄFTA // LÅS DATUM
+            </p>
+            <p className="text-[clamp(13px,2.5vw,18px)] tracking-[0.2em] text-white uppercase mb-8 font-mono">
+              {formatDateLabel(dates.find((d) => d.id === lockingDateId)?.date ?? "")}
+            </p>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => lockDate(lockingDateId)}
+                className="btn-rsa border-2 border-white text-white uppercase tracking-[0.35em] px-8 py-3 text-[13px] font-bold hover:bg-white hover:text-black"
+              >
+                BEKRÄFTA
+              </button>
+              <button
+                onClick={() => { playClick(); setLockingDateId(null); }}
+                className="text-[13px] tracking-[0.3em] text-white/30 hover:text-white/70 uppercase transition-colors"
+              >
+                AVBRYT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OPERATION LOCKED OVERLAY */}
+      {showLockOverlay && lockedDate && (
+        <div className="fixed inset-0 z-[9990] bg-black flex flex-col items-center justify-center overlay-enter">
+          <div className="text-center px-8 flicker">
+            <div
+              className="logo-rsa text-[clamp(56px,12vw,96px)] leading-none tracking-tight text-white block mb-2"
+              data-text="RSA"
+            >
+              RSA
+            </div>
+            <div className="w-full h-px bg-white/30 my-6" />
+            <p className="text-[11px] tracking-[0.5em] text-white/40 uppercase mb-4">
+              OPERATION LOCKED // DATUM BEKRÄFTAT
+            </p>
+            <h2 className="text-[clamp(14px,3vw,26px)] tracking-[0.2em] text-white uppercase mb-3">
+              <GlitchText text={formatDateLabel(lockedDate.date)} delay={300} speed={22} />
+            </h2>
+            <div className="w-full h-px bg-white/20 mb-6" />
+            <p className="text-[12px] tracking-[0.4em] text-white/40 uppercase font-mono">
+              KALLELSE KLAR ATT SKICKAS<span className="cursor-blink">_</span>
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

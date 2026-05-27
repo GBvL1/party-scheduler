@@ -66,6 +66,18 @@ export default function RespondPage() {
     }
   }, [loading]);
 
+  function selectAll() {
+    playClick();
+    setSaved(false);
+    setSelected(new Set(dates.map((d) => d.id)));
+  }
+
+  function clearAll() {
+    playClick();
+    setSaved(false);
+    setSelected(new Set());
+  }
+
   function toggleDate(id: string) {
     setSaved(false);
     const wasSelected = selected.has(id);
@@ -163,6 +175,26 @@ export default function RespondPage() {
             </p>
           </div>
 
+          {/* Select all / clear */}
+          {dates.length > 0 && (
+            <div className="flex justify-end gap-6 mb-3">
+              <button
+                type="button"
+                onClick={selectAll}
+                className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
+              >
+                [VÄLJ ALLA]
+              </button>
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
+              >
+                [RENSA]
+              </button>
+            </div>
+          )}
+
           {/* Date list */}
           {dates.length === 0 ? (
             <p className="text-white/50 text-xs tracking-widest font-mono text-center py-8 border border-white/10">
@@ -177,7 +209,17 @@ export default function RespondPage() {
                   <button
                     key={d.id}
                     type="button"
+                    data-date-index={i}
                     onClick={() => toggleDate(d.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        (document.querySelector(`[data-date-index="${i + 1}"]`) as HTMLElement)?.focus();
+                      } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        (document.querySelector(`[data-date-index="${i - 1}"]`) as HTMLElement)?.focus();
+                      }
+                    }}
                     className={`w-full flex items-center justify-between px-5 py-4 border text-left transition-all duration-75 group
                       ${isGlitching ? "select-glitch" : ""}
                       ${isSelected

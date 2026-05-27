@@ -47,16 +47,18 @@ app/
   join/[hostToken]/
     page.tsx                        # Guest registers their name
   respond/[friendToken]/
-    page.tsx                        # Guest marks available dates
+    page.tsx                        # Guest marks available dates; [VÄLJ ALLA]/[RENSA] + arrow-key nav
   dashboard/[hostToken]/
-    page.tsx                        # Host sees aggregated results
+    page.tsx                        # Host dashboard: results-first, 15s live poll, LISTA/GRID toggle, date locking, share card
   api/
     events/route.ts                 # POST — create event + dates
     friends/route.ts                # POST — register guest by name
     availability/[friendToken]/
       route.ts                      # GET dates+selections / POST save selections
     dashboard/[hostToken]/
-      route.ts                      # GET full dashboard data
+      route.ts                      # GET full dashboard data (lockedDateId + hasResponded per friend)
+      lock/
+        route.ts                    # POST — lock/unlock a date { dateId: string | null }
 
 lib/
   supabase.ts                       # Singleton Supabase client (lazy init)
@@ -88,7 +90,9 @@ Guest: /respond/[friendToken] → marks dates
   → POST /api/availability/[friendToken]  (saves full selection, replaces previous)
 
 Host: /dashboard/[hostToken]
-  → GET /api/dashboard/[hostToken]        (dates sorted by availability count)
+  → GET /api/dashboard/[hostToken]        (dates sorted by count, lockedDateId, hasResponded per friend)
+  → polls every 15s silently; glitch-animates changed rows
+  → POST /api/dashboard/[hostToken]/lock  (lock or unlock a date)
 ```
 
 ---
@@ -96,13 +100,19 @@ Host: /dashboard/[hostToken]
 ## Database schema
 
 ```
-events            id, name, host_token (unique), created_at
+events            id, name, host_token (unique), created_at, locked_date_id→candidate_dates (nullable)
 candidate_dates   id, event_id→events, date         (unique per event)
 friends           id, event_id→events, name, token (unique), created_at
 availabilities    id, friend_id→friends, candidate_date_id→candidate_dates (unique pair)
 ```
 
 All tokens are UUIDs (v4). `host_token` unlocks the dashboard and the join link. `friend_token` unlocks the respond page.
+
+`locked_date_id` is set by the host via `POST /api/dashboard/[hostToken]/lock`. Run this migration on existing DBs:
+
+```sql
+ALTER TABLE events ADD COLUMN IF NOT EXISTS locked_date_id uuid REFERENCES candidate_dates(id);
+```
 
 ---
 
