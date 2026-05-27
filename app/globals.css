@@ -9,6 +9,10 @@
   cursor: crosshair !important;
 }
 
+html, body {
+  background: oklch(0% 0 0);
+}
+
 body {
   font-family: var(--font-display, 'Stardos Stencil', serif);
 }
@@ -317,4 +321,47 @@ body {
 .crt-shutdown {
   animation: crt-shutdown 0.75s cubic-bezier(0.4, 0, 0.8, 1) forwards;
   transform-origin: center center;
+}
+
+/* ── GLITCH CRASH (violent fake crash → black) ───────────────────────────── */
+
+@keyframes glitch-crash {
+  /* Phase 1 — rapid chaotic thrashing */
+  0%   { filter: none; transform: none; opacity: 1; }
+  3%   { filter: brightness(25) invert(1) contrast(30) hue-rotate(90deg); transform: translateX(-16px) skewX(7deg); }
+  6%   { filter: brightness(0.08) contrast(10); transform: translateX(20px) skewX(-6deg) scaleX(1.04); }
+  9%   { filter: brightness(22) saturate(20) hue-rotate(180deg); transform: translateX(-12px) skewX(4deg); }
+  12%  { filter: brightness(0.04); transform: translateX(0); }
+  15%  { filter: brightness(20) invert(0.95) contrast(28) hue-rotate(270deg); transform: translateX(15px) skewX(-5deg) scaleX(0.97); }
+  18%  { filter: brightness(0.12) contrast(14); transform: translateX(-18px) skewX(6deg); }
+  21%  { filter: brightness(16) saturate(0) contrast(22); transform: translateX(10px); }
+  /* Phase 2 — flickering collapse */
+  24%  { filter: brightness(0.02); transform: none; }
+  27%  { filter: brightness(24) invert(0.85) hue-rotate(150deg) saturate(14); transform: translateX(-13px) skewX(-4deg); }
+  30%  { filter: brightness(0.25) contrast(8); transform: translateX(15px); }
+  33%  { filter: brightness(18) saturate(12) hue-rotate(60deg); transform: scaleY(0.92) translateX(-9px); }
+  36%  { filter: brightness(0.01); transform: none; opacity: 0.15; }
+  39%  { filter: brightness(30) invert(1) contrast(20) hue-rotate(30deg); transform: translateX(11px) skewX(5deg); opacity: 1; }
+  42%  { filter: brightness(0.03); transform: none; opacity: 0.2; }
+  /* Phase 3 — horizontal collapse to bright line then black */
+  46%  { filter: brightness(30) saturate(0) contrast(30); transform: scaleY(0.07) scaleX(1.12); opacity: 1; }
+  52%  { filter: brightness(40) saturate(0); transform: scaleY(0.006) scaleX(1.05); opacity: 1; }
+  60%  { filter: brightness(0); transform: scaleY(0) scaleX(1); opacity: 0; }
+  100% { opacity: 0; transform: scaleY(0); }
+}
+
+.glitch-crash {
+  animation: glitch-crash 1.7s linear forwards;
+  transform-origin: center center;
+}
+
+/* ── SLOW FADE IN (post-crash accepted screen) ───────────────────────────── */
+
+@keyframes fade-in-slow {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.fade-in-slow {
+  animation: fade-in-slow 2.2s ease-in forwards;
 }

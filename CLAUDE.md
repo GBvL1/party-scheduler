@@ -57,8 +57,9 @@ app/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.
                                     # Accepting registers as friend + marks availability for locked date.
-                                    # After accept: classified briefing types out (12ms/char), 4s grace,
-                                    # 5s self-destruct countdown → crt-shutdown → "UPPDRAG ACCEPTERAT" screen.
+                                    # After accept: classified briefing types out (18ms/char), 15s reading grace,
+                                    # 5s self-destruct countdown → glitch-crash (1.7s) → 2s black → "UPPDRAG ACCEPTERAT"
+                                    # fades in (fade-in-slow) on pure black — no border box, minimal text.
                                     # Declining: self-destruct countdown + "OMPRÖVA BESLUTET" to restart.
   api/
     events/route.ts                 # POST — create event + dates
@@ -178,6 +179,8 @@ They are already set in Vercel. Never commit `.env.local`.
 | `.cursor-blink` | Blinking underscore cursor for loading states |
 | `.crosshair-hud` | Pulsing crosshair — used in layout, not per-page |
 | `.crt-shutdown` | CRT power-off: white flash → vertical collapse to line → black. Apply to content wrapper, not `<main>` |
+| `.glitch-crash` | Violent fake crash: rapid chromatic thrashing → collapse to bright line → black. 1.7s, apply to content wrapper |
+| `.fade-in-slow` | 2.2s ease-in opacity fade — used on post-crash accepted screen |
 
 ### Overlays (layout only — do not add to pages)
 

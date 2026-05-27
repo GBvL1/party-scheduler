@@ -14,6 +14,7 @@ type MissionData = {
 };
 
 type Step = "boot" | "q1" | "q2" | "q3" | "name" | "briefing" | "accepted" | "aborted";
+type CrashPhase = null | "glitching" | "black";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ export default function MissionPage() {
   // Briefing step
   const [showBriefingCountdown, setShowBriefingCountdown] = useState(false);
   const [briefingCountdown, setBriefingCountdown] = useState(5);
-  const [shutdownActive, setShutdownActive] = useState(false);
+  const [crashPhase, setCrashPhase] = useState<CrashPhase>(null);
   const briefingScheduledRef = useRef(false);
 
   // ── Load mission data ──
@@ -136,36 +137,37 @@ export default function MissionPage() {
     return () => clearInterval(id);
   }, [step]);
 
-  // ── Briefing: reset state on step leave ──
+  // ── Briefing: reset on step leave ──
 
   useEffect(() => {
     if (step !== "briefing") {
       briefingScheduledRef.current = false;
       setShowBriefingCountdown(false);
       setBriefingCountdown(5);
+      setCrashPhase(null);
     }
   }, [step]);
 
-  // ── Briefing: play welcome sound when accepted screen appears ──
+  // ── Briefing: play welcome sound when accepted appears ──
 
   useEffect(() => {
     if (step === "accepted") playWelcomeBack();
   }, [step]);
 
-  // ── Briefing typewriter ──
+  // ── Briefing typewriter — 18ms/char for comfortable reading pace ──
 
-  const briefingTyped = useTypewriter(BRIEFING_TEXT, step === "briefing", 200, 12);
+  const briefingTyped = useTypewriter(BRIEFING_TEXT, step === "briefing", 200, 18);
 
-  // When text finishes typing → wait 4s → show countdown
+  // When text finishes → 15s reading grace → show countdown
   useEffect(() => {
     if (step !== "briefing" || briefingScheduledRef.current) return;
     if (briefingTyped.length < BRIEFING_TEXT.length) return;
     briefingScheduledRef.current = true;
-    const timer = setTimeout(() => setShowBriefingCountdown(true), 4000);
+    const timer = setTimeout(() => setShowBriefingCountdown(true), 15000);
     return () => clearTimeout(timer);
   }, [step, briefingTyped.length]);
 
-  // Countdown 5 → 0 → shutdown → accepted
+  // Countdown 5 → 0 → crash → black → accepted
   useEffect(() => {
     if (!showBriefingCountdown) { setBriefingCountdown(5); return; }
     setBriefingCountdown(5);
@@ -173,11 +175,15 @@ export default function MissionPage() {
       setBriefingCountdown((c) => {
         if (c <= 1) {
           clearInterval(id);
-          setShutdownActive(true);
+          // Phase 1: violent glitch (1.7s)
+          setCrashPhase("glitching");
+          // Phase 2: pure black (2s hold)
+          setTimeout(() => setCrashPhase("black"), 1700);
+          // Phase 3: accepted screen fades in
           setTimeout(() => {
-            setShutdownActive(false);
+            setCrashPhase(null);
             setStep("accepted");
-          }, 820);
+          }, 1700 + 2000);
           return 0;
         }
         return c - 1;
@@ -192,7 +198,7 @@ export default function MissionPage() {
     if (step === "name") setTimeout(() => inputRef.current?.focus(), 300);
   }, [step]);
 
-  // ── Navigation helpers ──
+  // ── Navigation ──
 
   function goToStep(next: Step) {
     setStepGlitch(true);
@@ -223,7 +229,6 @@ export default function MissionPage() {
       const data = await res.json();
       if (!res.ok) { playError(); setSubmitting(false); return; }
       setAcceptedName(data.name);
-      // Hard glitch → briefing
       setStepGlitch(true);
       setTimeout(() => setStep("briefing"), 370);
       setTimeout(() => setStepGlitch(false), 700);
@@ -233,12 +238,11 @@ export default function MissionPage() {
     }
   }
 
-  // ── Derived values ──
+  // ── Derived ──
 
   const dateFormatted = missionData?.lockedDate ? formatDateFull(missionData.lockedDate) : "";
   const missionRef    = missionData?.missionRef ?? "--------";
 
-  // Per-step typewriters
   const q1Typed   = useTypewriter(Q1_TEXT, step === "q1",   400, 38);
   const q2Typed   = useTypewriter(Q2_TEXT, step === "q2",   400, 28);
   const q3Typed   = useTypewriter(Q3_TEXT, step === "q3",   400, 28);
@@ -271,7 +275,14 @@ export default function MissionPage() {
 
   return (
     <main className={`min-h-screen flex flex-col items-center justify-center px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
-      <div className={`w-full max-w-lg flicker ${stepGlitch ? "page-glitch" : ""} ${shutdownActive ? "crt-shutdown" : ""}`}>
+      <div
+        className={[
+          "w-full max-w-lg flicker",
+          stepGlitch              ? "page-glitch"  : "",
+          crashPhase === "glitching" ? "glitch-crash"  : "",
+          crashPhase === "black"     ? "opacity-0"     : "",
+        ].join(" ")}
+      >
 
         {/* CLASSIFICATION HEADER — hidden during briefing/accepted for full immersion */}
         {!isBriefingOrAccepted && (
@@ -293,7 +304,7 @@ export default function MissionPage() {
           </div>
         )}
 
-        {/* ── Q1: AVAILABILITY ── */}
+        {/* ── Q1 ── */}
         {step === "q1" && (
           <div className="space-y-8">
             <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono">FRÅGA 01 / 03</p>
@@ -314,13 +325,11 @@ export default function MissionPage() {
           </div>
         )}
 
-        {/* ── Q2: CONFIDENTIALITY ── */}
+        {/* ── Q2 ── */}
         {step === "q2" && (
           <div className="space-y-8">
             <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono">FRÅGA 02 / 03</p>
-            <p className="text-[clamp(17px,3.2vw,22px)] tracking-[0.12em] text-white uppercase font-mono leading-snug min-h-[7rem]">
-              {q2Typed}
-            </p>
+            <p className="text-[clamp(17px,3.2vw,22px)] tracking-[0.12em] text-white uppercase font-mono leading-snug min-h-[7rem]">{q2Typed}</p>
             <div className="flex gap-4 pt-2">
               <button onClick={() => handleYes("q3")} className="btn-rsa flex-1 border-2 border-white text-white uppercase tracking-[0.4em] py-5 text-[14px] font-bold hover:bg-white hover:text-black transition-all duration-100">BEKRÄFTAT</button>
               <button onClick={handleNo}              className="btn-rsa flex-1 border border-white/25 text-white/35 uppercase tracking-[0.4em] py-5 text-[14px] hover:border-white/50 hover:text-white/60 transition-all duration-100">NEKA</button>
@@ -328,13 +337,11 @@ export default function MissionPage() {
           </div>
         )}
 
-        {/* ── Q3: COMMITMENT ── */}
+        {/* ── Q3 ── */}
         {step === "q3" && (
           <div className="space-y-8">
             <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono">FRÅGA 03 / 03</p>
-            <p className="text-[clamp(17px,3.2vw,22px)] tracking-[0.12em] text-white uppercase font-mono leading-snug min-h-[7rem]">
-              {q3Typed}
-            </p>
+            <p className="text-[clamp(17px,3.2vw,22px)] tracking-[0.12em] text-white uppercase font-mono leading-snug min-h-[7rem]">{q3Typed}</p>
             <div className="flex gap-4 pt-2">
               <button onClick={() => handleYes("name")} className="btn-rsa flex-1 border-2 border-white text-white uppercase tracking-[0.4em] py-5 text-[14px] font-bold hover:bg-white hover:text-black transition-all duration-100">ACCEPTERAR</button>
               <button onClick={handleNo}                className="btn-rsa flex-1 border border-white/25 text-white/35 uppercase tracking-[0.4em] py-5 text-[14px] hover:border-white/50 hover:text-white/60 transition-all duration-100">NEKA</button>
@@ -342,12 +349,10 @@ export default function MissionPage() {
           </div>
         )}
 
-        {/* ── NAME ENTRY ── */}
+        {/* ── NAME ── */}
         {step === "name" && (
           <div className="space-y-8">
-            <p className="text-[clamp(15px,2.8vw,19px)] tracking-[0.18em] text-white uppercase font-mono min-h-[2rem]">
-              {nameTyped}
-            </p>
+            <p className="text-[clamp(15px,2.8vw,19px)] tracking-[0.18em] text-white uppercase font-mono min-h-[2rem]">{nameTyped}</p>
             <div className="border border-white/30 flex items-center bg-white/3 focus-within:border-white/60 transition-colors duration-150">
               <span className="text-white/40 font-mono text-[15px] pl-4 pr-2 shrink-0 select-none">&gt;</span>
               <input
@@ -374,25 +379,23 @@ export default function MissionPage() {
 
         {/* ── BRIEFING ── */}
         {step === "briefing" && (
-          <div className="space-y-8">
+          <div className="space-y-10">
             <p className="text-[10px] tracking-[0.5em] text-white/20 uppercase font-mono">
               RSA // UPPDRAGSGENOMGÅNG // KLASSIFICERAT
             </p>
-            {/* Typewriter briefing text — whitespace-pre-wrap preserves paragraph breaks */}
-            <pre className="text-[clamp(11px,1.9vw,13px)] tracking-[0.07em] text-white/90 font-mono leading-[1.85] whitespace-pre-wrap font-[inherit]">
+            <pre className="text-[clamp(11px,1.9vw,13px)] tracking-[0.07em] text-white/90 font-mono leading-[1.9] whitespace-pre-wrap font-[inherit]">
               {briefingTyped}
               {briefingTyped.length < BRIEFING_TEXT.length && (
                 <span className="cursor-blink">_</span>
               )}
             </pre>
 
-            {/* Self-destruct countdown — appears after reading grace period */}
             {showBriefingCountdown && (
-              <div className="border-t border-white/15 pt-7 text-center space-y-2">
+              <div className="border-t border-white/15 pt-8 text-center space-y-3">
                 <p className="text-[10px] tracking-[0.5em] text-red-400/55 uppercase font-mono">
                   DETTA MEDDELANDE FÖRSTÖRS OM
                 </p>
-                <p className="text-[clamp(80px,22vw,120px)] leading-none font-bold text-red-400 font-mono tabular-nums">
+                <p className="text-[clamp(88px,24vw,128px)] leading-none font-bold text-red-400 font-mono tabular-nums">
                   {briefingCountdown}
                 </p>
                 <p className="text-[10px] tracking-[0.45em] text-white/20 uppercase font-mono">
@@ -403,31 +406,29 @@ export default function MissionPage() {
           </div>
         )}
 
-        {/* ── ACCEPTED ── */}
+        {/* ── ACCEPTED — text on black, slow fade from darkness ── */}
         {step === "accepted" && (
-          <div className="overlay-enter text-center">
-            <div className="border-2 border-white p-8 bg-white/4 space-y-5">
-              <p className="text-[11px] tracking-[0.6em] text-white/40 uppercase font-mono">■ ■ ■</p>
-              <h2 className="text-[clamp(22px,5vw,34px)] tracking-[0.18em] text-white uppercase font-bold">
-                <GlitchText text="UPPDRAG ACCEPTERAT" delay={350} speed={20} />
-              </h2>
-              <div className="h-px bg-white/25" />
-              <div className="space-y-4 pt-1">
-                <div>
-                  <p className="text-[10px] tracking-[0.5em] text-white/35 uppercase font-mono mb-1">OPERATIVE</p>
-                  <p className="text-[clamp(16px,3vw,22px)] tracking-[0.2em] text-white uppercase font-mono">{acceptedName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] tracking-[0.5em] text-white/35 uppercase font-mono mb-1">UPPDRAGSDATUM</p>
-                  <p className="text-[clamp(14px,2.5vw,18px)] tracking-[0.12em] text-white uppercase font-mono">{dateFormatted}</p>
-                </div>
+          <div className="fade-in-slow text-center space-y-7 py-4">
+            <p className="text-[10px] tracking-[0.6em] text-white/20 uppercase font-mono">■ ■ ■</p>
+            <h2 className="text-[clamp(22px,5vw,34px)] tracking-[0.18em] text-white uppercase font-bold">
+              <GlitchText text="UPPDRAG ACCEPTERAT" delay={900} speed={25} />
+            </h2>
+            <div className="h-px bg-white/12 max-w-[180px] mx-auto" />
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] tracking-[0.5em] text-white/25 uppercase font-mono mb-2">OPERATIVE</p>
+                <p className="text-[clamp(16px,3vw,22px)] tracking-[0.2em] text-white uppercase font-mono">{acceptedName}</p>
               </div>
-              <div className="h-px bg-white/15" />
-              <p className="text-[11px] tracking-[0.4em] text-white/30 uppercase font-mono">
-                YTTERLIGARE ORDER INKOMMER<span className="cursor-blink">_</span>
-              </p>
-              <p className="text-[10px] tracking-[0.35em] text-white/15 uppercase font-mono">RSA SER ALLT</p>
+              <div>
+                <p className="text-[10px] tracking-[0.5em] text-white/25 uppercase font-mono mb-2">UPPDRAGSDATUM</p>
+                <p className="text-[clamp(14px,2.5vw,18px)] tracking-[0.12em] text-white uppercase font-mono">{dateFormatted}</p>
+              </div>
             </div>
+            <div className="h-px bg-white/8 max-w-[180px] mx-auto" />
+            <p className="text-[11px] tracking-[0.4em] text-white/20 uppercase font-mono">
+              YTTERLIGARE ORDER INKOMMER<span className="cursor-blink">_</span>
+            </p>
+            <p className="text-[10px] tracking-[0.35em] text-white/10 uppercase font-mono">RSA SER ALLT</p>
           </div>
         )}
 
