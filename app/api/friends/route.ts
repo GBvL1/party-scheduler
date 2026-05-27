@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ friendToken: existing.token, friendId: existing.id, name: existing.name });
+    return NextResponse.json({ friendToken: existing.token, friendId: existing.id, name: existing.name, returning: true });
   }
 
   const friendToken = uuidv4();
@@ -43,6 +43,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to add friend." }, { status: 500 });
   }
 
-  return NextResponse.json({ friendToken, friendId: friend.id, name: friend.name });
+  return NextResponse.json({ friendToken, friendId: friend.id, name: friend.name, returning: false });
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GlitchText } from "./components/GlitchText";
-import { playClick, playConfirm, playError } from "@/lib/sound";
+import { playClick, playConfirm, playError, startLoadingBlips } from "@/lib/sound";
 
 const FIXED_DATES = [
   "2026-06-07",
@@ -44,6 +44,11 @@ export default function HomePage() {
     }, 7000);
     return () => clearInterval(id);
   }, [booted]);
+
+  useEffect(() => {
+    if (!loading) return;
+    return startLoadingBlips();
+  }, [loading]);
 
   async function initialize() {
     playClick();
