@@ -13,8 +13,12 @@ export async function GET(
     .eq("host_token", hostToken)
     .single();
 
-  if (eventError || !event) {
+  if (!event) {
     return NextResponse.json({ error: "Event not found." }, { status: 404 });
+  }
+  if (eventError) {
+    console.error("Event fetch error:", eventError);
+    return NextResponse.json({ error: "Failed to load event." }, { status: 500 });
   }
 
   const { data: candidateDates, error: datesError } = await supabase
