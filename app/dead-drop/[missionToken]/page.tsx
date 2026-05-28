@@ -22,10 +22,10 @@ export default function DeadDropPage() {
   const [error, setError] = useState("");
   const [lockedDate, setLockedDate] = useState("");
   const [missionRef, setMissionRef] = useState("");
-  const [location, setLocation] = useState<string | null>(null);
+  const [bringItems, setBringItems] = useState<string[]>([]);
   const [visible, setVisible] = useState(false);
   const [revealStep, setRevealStep] = useState(0);
-  const locationRef = useRef<string | null>(null);
+  const bringRef = useRef<string[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -39,8 +39,8 @@ export default function DeadDropPage() {
         }
         setLockedDate(data.lockedDate);
         setMissionRef(data.missionRef);
-        setLocation(data.location ?? null);
-        locationRef.current = data.location ?? null;
+        setBringItems(data.bringItems ?? []);
+        bringRef.current = data.bringItems ?? [];
         setLoading(false);
       } catch {
         setError("NÄTVERKSFEL.");
@@ -61,9 +61,9 @@ export default function DeadDropPage() {
   useEffect(() => {
     if (!visible) return;
     playBlip();
-    const loc = locationRef.current;
-    const delays = loc
-      ? [300, 700, 1100, 1500, 2000, 2400, 2800, 3300]
+    const hasBring = bringRef.current.length > 0;
+    const delays = hasBring
+      ? [300, 700, 1100, 1500, 2000, 2600, 3300]
       : [300, 700, 1100, 1500, 2000, 2600];
     const timers = delays.map((d, i) =>
       setTimeout(() => setRevealStep(i + 1), d)
@@ -124,19 +124,22 @@ export default function DeadDropPage() {
           </p>
         )}
 
-        {revealStep >= 5 && location && (
-          <p className="text-[10px] tracking-[0.5em] text-white/50 uppercase mb-2 mt-6">
-            KOORDINATER
-          </p>
+        {revealStep >= 5 && bringItems.length > 0 && (
+          <>
+            <p className="text-[10px] tracking-[0.5em] text-white/50 uppercase mb-3 mt-6">
+              TA MED
+            </p>
+            <div className="space-y-1 mb-6">
+              {bringItems.map((item, i) => (
+                <p key={i} className="text-[13px] tracking-[0.1em] text-white uppercase">
+                  • {item}
+                </p>
+              ))}
+            </div>
+          </>
         )}
 
-        {revealStep >= 6 && location && (
-          <p className="text-[clamp(13px,2.5vw,18px)] tracking-[0.12em] text-white uppercase leading-snug mb-6">
-            {location}
-          </p>
-        )}
-
-        {revealStep >= (location ? 7 : 5) && (
+        {revealStep >= (bringItems.length > 0 ? 6 : 5) && (
           <>
             <div className="h-px bg-white/10 mb-4" />
             <p className="text-[10px] tracking-[0.45em] text-white/40 uppercase">
@@ -145,7 +148,7 @@ export default function DeadDropPage() {
           </>
         )}
 
-        {revealStep >= (location ? 8 : 6) && (
+        {revealStep >= (bringItems.length > 0 ? 7 : 6) && (
           <p className="text-[10px] tracking-[0.3em] text-white/30 uppercase leading-relaxed mt-8">
             DETTA DOKUMENT ÄR AVSETT ENBART FÖR MOTTAGAREN.<br />
             RSA FÖRNEKAR ALL KÄNNEDOM OM DESS EXISTENS.

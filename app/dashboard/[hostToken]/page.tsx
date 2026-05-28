@@ -68,17 +68,15 @@ export default function DashboardPage() {
   const [pollCountdown, setPollCountdown] = useState(15);
   const [newDataFlash, setNewDataFlash] = useState(false);
   const [newDataBanner, setNewDataBanner] = useState(false);
-  const [location, setLocation] = useState<string | null>(null);
-  const [locationInput, setLocationInput] = useState("");
-  const [locationEditing, setLocationEditing] = useState(false);
-  const [locationSaving, setLocationSaving] = useState(false);
+  const [bringItems, setBringItems] = useState<string[]>([]);
+  const [bringInput, setBringInput] = useState("");
+  const [bringItemSaving, setBringItemSaving] = useState(false);
   const prevDatesRef = useRef<DateEntry[]>([]);
 
   const applyData = useCallback((data: any, silent: boolean) => {
     if (!silent) {
       setEventName(data.eventName);
-      setLocation(data.location ?? null);
-      setLocationInput(data.location ?? "");
+      setBringItems(data.bringItems ?? []);
     }
 
     if (silent && prevDatesRef.current.length > 0) {
@@ -176,23 +174,37 @@ export default function DashboardPage() {
     } catch {}
   }
 
-  async function saveLocation() {
-    setLocationSaving(true);
+  async function saveBringItems(items: string[]) {
     try {
-      const res = await fetch(`/api/dashboard/${hostToken}`, {
+      await fetch(`/api/dashboard/${hostToken}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: locationInput }),
+        body: JSON.stringify({ bringItems: items }),
       });
-      if (!res.ok) return;
-      const data = await res.json();
-      setLocation(data.location ?? null);
-      setLocationEditing(false);
+    } catch {}
+  }
+
+  async function addBringItem() {
+    const trimmed = bringInput.trim();
+    if (!trimmed) return;
+    const newItems = [...bringItems, trimmed];
+    setBringItems(newItems);
+    setBringInput("");
+    playClick();
+    setBringItemSaving(true);
+    try {
+      await saveBringItems(newItems);
       playConfirm();
-    } catch {
     } finally {
-      setLocationSaving(false);
+      setBringItemSaving(false);
     }
+  }
+
+  async function removeBringItem(index: number) {
+    const newItems = bringItems.filter((_, i) => i !== index);
+    setBringItems(newItems);
+    playClick();
+    await saveBringItems(newItems);
   }
 
   function getJoinLink() {
@@ -225,16 +237,13 @@ export default function DashboardPage() {
     const countLine = maxResponders > 0
       ? `${entry.availableFriends.length}/${maxResponders} OPERATIVE${maxResponders !== 1 ? "S" : ""} BEKRÄFTADE`
       : "";
-    const lines = [
-      "RSA INITIERING // DATUM BEKRÄFTAT",
-      "",
-      formatDateLabel(entry.date),
-      ...(location ? [`KOORDINATER: ${location}`] : []),
-      ...(countLine ? [countLine] : []),
-      "",
-      "// RSA SER ALLT",
-    ];
-    return lines.join("\n");
+    const parts: string[] = ["RSA INITIERING // DATUM BEKRÄFTAT", "", formatDateLabel(entry.date)];
+    if (bringItems.length > 0) {
+      parts.push("", "TA MED:", ...bringItems.map((i) => `• ${i}`));
+    }
+    if (countLine) parts.push("", countLine);
+    parts.push("", "// RSA SER ALLT");
+    return parts.join("\n");
   }
 
   function buildNudgeMessage() {
@@ -401,59 +410,49 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* KOORDINATER — shown when date is locked */}
+          {/* TA MED-LISTA — shown when date is locked */}
           {lockedDate && (
             <div className="border border-white/20 p-5">
               <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-                KOORDINATER
+                TA MED // PACKLISTA
               </h2>
               <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
-                MÖTESPLATS. VISAS VIA DEAD DROP OCH KALLELSE.
+                VISAS I DEAD DROP OCH KALLELSE TILL OPERATIVES.
               </p>
-              {location !== null && !locationEditing ? (
-                <div className="flex items-center gap-0">
-                  <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/60 font-mono tracking-wider truncate">
-                    {location}
-                  </code>
-                  <button
-                    onClick={() => { playClick(); setLocationEditing(true); }}
-                    className="shrink-0 border border-white/30 text-white/40 text-[11px] tracking-[0.3em] uppercase font-mono px-4 py-3 hover:border-white hover:text-white transition-all duration-100"
-                  >
-                    ÄNDRA
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-stretch gap-0">
-                    <input
-                      type="text"
-                      value={locationInput}
-                      onChange={(e) => setLocationInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveLocation();
-                        if (e.key === "Escape" && location !== null) { setLocationEditing(false); setLocationInput(location); }
-                      }}
-                      placeholder="T.EX. LAGERLOKAL 7, HAMNGATAN 4"
-                      className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/70 font-mono tracking-wider placeholder:text-white/20 outline-none focus:border-white/40"
-                    />
-                    <button
-                      onClick={saveLocation}
-                      disabled={locationSaving || !locationInput.trim()}
-                      className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30"
-                    >
-                      {locationSaving ? <span className="cursor-blink">_</span> : "SPARA"}
-                    </button>
-                  </div>
-                  {location !== null && (
-                    <button
-                      onClick={() => { setLocationEditing(false); setLocationInput(location); }}
-                      className="text-[10px] tracking-[0.3em] text-white/25 hover:text-white/50 uppercase font-mono underline underline-offset-4 transition-colors duration-100"
-                    >
-                      AVBRYT
-                    </button>
-                  )}
+              {bringItems.length > 0 && (
+                <div className="space-y-px mb-4">
+                  {bringItems.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 border border-white/10 bg-white/3">
+                      <span className="text-[12px] tracking-[0.15em] text-white/70 font-mono uppercase">
+                        • {item}
+                      </span>
+                      <button
+                        onClick={() => removeBringItem(i)}
+                        className="text-[10px] tracking-[0.25em] text-white/25 hover:text-white/60 font-mono ml-4 uppercase transition-colors duration-100 shrink-0"
+                      >
+                        [TA BORT]
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
+              <div className="flex items-stretch gap-0">
+                <input
+                  type="text"
+                  value={bringInput}
+                  onChange={(e) => setBringInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") addBringItem(); }}
+                  placeholder="T.EX. BADKLÄDER, HANDDUK, SOLKRÄM"
+                  className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/70 font-mono tracking-wider placeholder:text-white/20 outline-none focus:border-white/40"
+                />
+                <button
+                  onClick={addBringItem}
+                  disabled={bringItemSaving || !bringInput.trim()}
+                  className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30"
+                >
+                  {bringItemSaving ? <span className="cursor-blink">_</span> : "LÄGG TILL"}
+                </button>
+              </div>
             </div>
           )}
 

@@ -10,7 +10,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, name, locked_date_id, mission_token, location")
+    .select("id, name, locked_date_id, mission_token, bring_items")
     .eq("mission_token", missionToken)
     .single();
 
@@ -36,7 +36,7 @@ export async function GET(
     eventName: event.name,
     lockedDate: lockedDate.date,
     missionRef: missionToken.slice(0, 8).toUpperCase(),
-    location: event.location ?? null,
+    bringItems: event.bring_items ?? [],
   });
 }
 

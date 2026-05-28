@@ -50,7 +50,7 @@ app/
     page.tsx                        # Guest marks dates; LISTA/KALENDER view toggle (B2), month-grouped list,
                                     # calendar grid (Mon-first, candidate dates tappable, non-candidates dimmed),
                                     # [VÄLJ ALLA]/[RENSA], arrow-key nav (list only),
-                                    # mission confirmation hero when date locked: large date + location (if set) + personal status
+                                    # mission confirmation hero when date locked: large date + TA MED list (if set) + personal status
                                     #   (■ TILLGÄNGLIG / ■ DATUM KONFLIKTAR / SVAR SAKNAS), select-glitch on enter,
                                     # persistent "RAPPORT INLÄMNAD" indicator once responded (A4),
                                     # sticky save bar pinned to bottom viewport (A2), social signal after save
@@ -62,9 +62,9 @@ app/
                                     # LÅS on top-3 only, date locking, enriched share card (includes location if set),
                                     # "KOPIERA UPPDRAGSLÄNK" + "KOPIERA DEAD DROP" buttons when date locked,
                                     # "KOPIERA PÅMINNELSE" button for non-responding operatives (C3),
-                                    # KOORDINATER section below locked date banner (only when date locked): host
-                                    #   sets/edits meeting location → shown in dead drop, respond hero, and share
-                                    #   message; PATCH /api/dashboard/[hostToken]
+                                    # TA MED list editor below locked date banner (only when date locked): host
+                                    #   adds/removes items (optimistic, auto-saves per item) → shown in dead drop,
+                                    #   respond hero, and share message; PATCH /api/dashboard/[hostToken]
   mission/[missionToken]/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.
@@ -79,23 +79,23 @@ app/
     page.tsx                        # Post-mission intel page. Accessible at /dead-drop/[missionToken].
                                     # Reached via auto-redirect from mission page (3s after permanent black).
                                     # Also linkable directly from dashboard "KOPIERA DEAD DROP" button.
-                                    # Staggered reveal: 7 steps (~3.3s) without location, 9 steps (~4s) with location.
-                                    # Steps: header, REF, date, [KOORDINATER label + value if set], status, disclaimer.
+                                    # Staggered reveal: 6 steps (~2.6s) without bring list, 7 steps (~3.3s) with it.
+                                    # Steps: header, REF, date, [TA MED list if set], status, disclaimer.
                                     # No RSA logo, no crt-boot — raw terminal aesthetic, gentle fade-in.
                                     # "RADERA LOKAL KOPIA" button navigates to /. Page always revisitable.
   api/
     events/route.ts                 # POST — create event + dates
     friends/route.ts                # POST — register guest by name
     availability/[friendToken]/
-      route.ts                      # GET: dates+selections + lockedDate + location + respondedCount + totalCount
+      route.ts                      # GET: dates+selections + lockedDate + bringItems + respondedCount + totalCount
                                     # POST: saves selections; returns respondedCount + totalCount
     dashboard/[hostToken]/
-      route.ts                      # GET full dashboard data (lockedDateId + missionToken + location + hasResponded per friend)
-                                    # PATCH: { location } → update meeting location; returns { success, location }
+      route.ts                      # GET full dashboard data (lockedDateId + missionToken + bringItems + hasResponded per friend)
+                                    # PATCH: { bringItems: string[] } → save bring list; returns { success, bringItems }
       lock/
         route.ts                    # POST — lock/unlock a date { dateId: string | null }
     mission/[missionToken]/
-      route.ts                      # GET: { eventName, lockedDate, missionRef, location } — 404 if no locked date
+      route.ts                      # GET: { eventName, lockedDate, missionRef, bringItems } — 404 if no locked date
                                     # POST: { name } → register friend + upsert availability for locked date
 
 lib/
@@ -145,7 +145,7 @@ Surprise guest: /mission/[missionToken]
 ## Database schema
 
 ```
-events            id, name, host_token (unique), mission_token (unique), created_at, locked_date_id→candidate_dates (nullable), location (nullable text)
+events            id, name, host_token (unique), mission_token (unique), created_at, locked_date_id→candidate_dates (nullable), bring_items (text[])
 candidate_dates   id, event_id→events, date         (unique per event)
 friends           id, event_id→events, name, token (unique), created_at
 availabilities    id, friend_id→friends, candidate_date_id→candidate_dates (unique pair)
@@ -153,14 +153,15 @@ availabilities    id, friend_id→friends, candidate_date_id→candidate_dates (
 
 All tokens are UUIDs (v4). `host_token` unlocks the dashboard and the join link. `friend_token` unlocks the respond page. `mission_token` unlocks the spy acceptance page at `/mission/[missionToken]` — safe to share with surprise guests.
 
-`locked_date_id` is set by the host via `POST /api/dashboard/[hostToken]/lock`. `location` is set via `PATCH /api/dashboard/[hostToken]`. Run these migrations on existing DBs:
+`locked_date_id` is set by the host via `POST /api/dashboard/[hostToken]/lock`. `bring_items` is set via `PATCH /api/dashboard/[hostToken]`. Run these migrations on existing DBs:
 
 ```sql
 ALTER TABLE events ADD COLUMN IF NOT EXISTS locked_date_id uuid REFERENCES candidate_dates(id);
 ALTER TABLE events ADD COLUMN IF NOT EXISTS mission_token uuid DEFAULT gen_random_uuid();
 UPDATE events SET mission_token = gen_random_uuid() WHERE mission_token IS NULL;
 ALTER TABLE events ALTER COLUMN mission_token SET NOT NULL;
-ALTER TABLE events ADD COLUMN IF NOT EXISTS location text;
+ALTER TABLE events DROP COLUMN IF EXISTS location;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS bring_items text[] DEFAULT '{}';
 ```
 
 ---

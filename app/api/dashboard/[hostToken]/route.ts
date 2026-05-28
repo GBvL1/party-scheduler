@@ -9,7 +9,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, name, created_at, locked_date_id, mission_token, location")
+    .select("id, name, created_at, locked_date_id, mission_token, bring_items")
     .eq("host_token", hostToken)
     .single();
 
@@ -78,7 +78,7 @@ export async function GET(
     createdAt: event.created_at,
     lockedDateId: event.locked_date_id ?? null,
     missionToken: event.mission_token ?? null,
-    location: event.location ?? null,
+    bringItems: event.bring_items ?? [],
     friends: (friends ?? []).map((f) => ({
       id: f.id,
       name: f.name,
@@ -94,8 +94,15 @@ export async function PATCH(
   { params }: { params: Promise<{ hostToken: string }> }
 ) {
   const { hostToken } = await params;
-  const { location } = await req.json();
-  const trimmed = typeof location === "string" ? location.trim() : null;
+  const { bringItems } = await req.json();
+
+  if (!Array.isArray(bringItems)) {
+    return NextResponse.json({ error: "bringItems must be an array." }, { status: 400 });
+  }
+
+  const cleaned = bringItems
+    .filter((i): i is string => typeof i === "string" && !!i.trim())
+    .map((i) => i.trim());
 
   const { data: event } = await supabase
     .from("events")
@@ -109,12 +116,12 @@ export async function PATCH(
 
   const { error } = await supabase
     .from("events")
-    .update({ location: trimmed || null })
+    .update({ bring_items: cleaned })
     .eq("host_token", hostToken);
 
   if (error) {
-    return NextResponse.json({ error: "Failed to update location." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update." }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, location: trimmed || null });
+  return NextResponse.json({ success: true, bringItems: cleaned });
 }

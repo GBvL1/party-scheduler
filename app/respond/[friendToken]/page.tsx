@@ -78,7 +78,7 @@ export default function RespondPage() {
   const [savedRespondedCount, setSavedRespondedCount] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [confirmFlash, setConfirmFlash] = useState(false);
-  const [location, setLocation] = useState<string | null>(null);
+  const [bringItems, setBringItems] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -92,7 +92,7 @@ export default function RespondPage() {
       setIsFirstSave(!hasExisting);
       setHasResponded(hasExisting);
       setLockedDate(data.lockedDate ?? null);
-      setLocation(data.location ?? null);
+      setBringItems(data.bringItems ?? []);
       setRespondedCount(data.respondedCount ?? 0);
       setTotalCount(data.totalCount ?? 0);
     } catch {
@@ -273,15 +273,19 @@ export default function RespondPage() {
               <p className="text-[clamp(18px,4vw,28px)] tracking-[0.12em] text-white uppercase leading-tight mb-5">
                 {formatDateLabel(lockedDate.date)}
               </p>
-              {location && (
+              {bringItems.length > 0 && (
                 <>
                   <div className="h-px bg-white/10 mb-4" />
-                  <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono mb-1">
-                    KOORDINATER
+                  <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono mb-2">
+                    TA MED
                   </p>
-                  <p className="text-[13px] tracking-[0.15em] text-white uppercase font-mono mb-4">
-                    {location}
-                  </p>
+                  <div className="space-y-1 mb-4">
+                    {bringItems.map((item, i) => (
+                      <p key={i} className="text-[12px] tracking-[0.1em] text-white/80 uppercase font-mono">
+                        • {item}
+                      </p>
+                    ))}
+                  </div>
                 </>
               )}
               <div className="h-px bg-white/15 mb-4" />
