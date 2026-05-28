@@ -87,6 +87,9 @@ export default function DeadDropPage() {
     return () => timers.forEach(clearTimeout);
   }, [visible]);
 
+  const bringText = bringItems.map((i) => `• ${i}`).join("\n");
+  const typedBring = useTypewriter(bringText, revealStep >= 5 && bringItems.length > 0);
+
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -106,9 +109,6 @@ export default function DeadDropPage() {
       </main>
     );
   }
-
-  const bringText = bringItems.map((i) => `• ${i}`).join("\n");
-  const typedBring = useTypewriter(bringText, revealStep >= 5 && bringItems.length > 0);
 
   return (
     <main
