@@ -47,12 +47,19 @@ app/
   join/[hostToken]/
     page.tsx                        # Guest registers their name
   respond/[friendToken]/
-    page.tsx                        # Guest marks dates; month-grouped list, [VÄLJ ALLA]/[RENSA], arrow-key nav,
-                                    # locked-date banner (A1), social signal after save (B2)
+    page.tsx                        # Guest marks dates; LISTA/KALENDER view toggle (B2), month-grouped list,
+                                    # calendar grid (Mon-first, candidate dates tappable, non-candidates dimmed),
+                                    # [VÄLJ ALLA]/[RENSA], arrow-key nav (list only), locked-date banner,
+                                    # persistent "RAPPORT INLÄMNAD" indicator once responded (A4),
+                                    # sticky save bar pinned to bottom viewport (A2), social signal after save
   dashboard/[hostToken]/
-    page.tsx                        # Host dashboard: results-first, 15s live poll + countdown (B1), LISTA/GRID toggle,
-                                    # smart recommendation (A3), LÅS on top-3 only (B3), date locking, enriched share card (C2),
-                                    # "KOPIERA UPPDRAGSLÄNK" button visible when a date is locked
+    page.tsx                        # Host dashboard: results-first, 15s live poll + countdown, LISTA/GRID toggle,
+                                    # smart recommendation in highlighted "INTEL ANALYS" block (B1),
+                                    # new-response notification banner + row glitch (B3),
+                                    # state-aware layout: empty → join link hero at top; collecting/locked → results first (A1),
+                                    # LÅS on top-3 only, date locking, enriched share card,
+                                    # "KOPIERA UPPDRAGSLÄNK" button visible when date locked,
+                                    # "KOPIERA PÅMINNELSE" button for non-responding operatives (C3)
   mission/[missionToken]/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.

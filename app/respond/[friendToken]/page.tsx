@@ -7,6 +7,9 @@ import { playClick, playConfirm, playError, playToggle, playWelcomeBack, playBli
 
 type CandidateDate = { id: string; date: string; selected: boolean };
 type MonthGroup = { monthKey: string; label: string; dates: CandidateDate[] };
+type CalendarMonthData = { monthKey: string; year: number; month: number; label: string; cells: (number | null)[] };
+
+const SW_DAYS = ["MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR", "SÖN"];
 
 function formatDateLabel(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -36,6 +39,25 @@ function groupDatesByMonth(dates: CandidateDate[]): MonthGroup[] {
   return result;
 }
 
+function buildCalendarData(dates: CandidateDate[]): CalendarMonthData[] {
+  const monthKeys = [...new Set(dates.map((d) => d.date.substring(0, 7)))].sort();
+  return monthKeys.map((monthKey) => {
+    const [year, month] = monthKey.split("-").map(Number);
+    const firstDow = new Date(year, month - 1, 1).getDay(); // 0=Sun
+    const startOffset = (firstDow + 6) % 7; // convert to Mon-first
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const cells: (number | null)[] = [
+      ...Array(startOffset).fill(null),
+      ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ];
+    while (cells.length % 7 !== 0) cells.push(null);
+    const label = new Date(year, month - 1, 1)
+      .toLocaleDateString("sv-SE", { month: "long", year: "numeric" })
+      .toUpperCase();
+    return { monthKey, year, month, label, cells };
+  });
+}
+
 export default function RespondPage() {
   const { friendToken } = useParams<{ friendToken: string }>();
   const [friendName, setFriendName] = useState("");
@@ -48,11 +70,13 @@ export default function RespondPage() {
   const [glitchingId, setGlitchingId] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
   const [isFirstSave, setIsFirstSave] = useState(false);
+  const [hasResponded, setHasResponded] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [lockedDate, setLockedDate] = useState<{ id: string; date: string } | null>(null);
   const [respondedCount, setRespondedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [savedRespondedCount, setSavedRespondedCount] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   const fetchData = useCallback(async () => {
     try {
@@ -64,6 +88,7 @@ export default function RespondPage() {
       setSelected(new Set(data.candidateDates.filter((d: CandidateDate) => d.selected).map((d: CandidateDate) => d.id)));
       const hasExisting = data.candidateDates.some((d: CandidateDate) => d.selected);
       setIsFirstSave(!hasExisting);
+      setHasResponded(hasExisting);
       setLockedDate(data.lockedDate ?? null);
       setRespondedCount(data.respondedCount ?? 0);
       setTotalCount(data.totalCount ?? 0);
@@ -83,7 +108,6 @@ export default function RespondPage() {
     }
   }, [loading]);
 
-  // Play a blip when the locked date banner first appears
   useEffect(() => {
     if (lockedDate && !loading) playBlip();
   }, [lockedDate?.id, loading]);
@@ -145,7 +169,7 @@ export default function RespondPage() {
         playConfirm();
       }
       setSaved(true);
-      // Use counts from POST response for accuracy
+      setHasResponded(true);
       const rc = data.respondedCount ?? (wasFirstSave ? respondedCount + 1 : respondedCount);
       const tc = data.totalCount ?? totalCount;
       setSavedRespondedCount(rc);
@@ -184,11 +208,14 @@ export default function RespondPage() {
 
   const dateIndexMap = new Map(dates.map((d, i) => [d.id, i]));
   const monthGroups = groupDatesByMonth(dates);
+  const calendarMonths = buildCalendarData(dates);
+  const dateByStr = new Map(dates.map((d) => [d.date, d]));
 
   return (
     <>
-      <main className={`min-h-screen flex flex-col items-center justify-center px-4 py-12 ${booted ? "crt-boot" : "opacity-0"}`}>
-        <div className="w-full max-w-lg flicker">
+      {/* A2 — extra bottom padding so sticky bar doesn't overlap content */}
+      <main className={`min-h-screen px-4 pt-12 pb-32 ${booted ? "crt-boot" : "opacity-0"}`}>
+        <div className="w-full max-w-lg mx-auto flicker">
 
           {/* Header */}
           <div className="mb-8 text-center">
@@ -210,7 +237,22 @@ export default function RespondPage() {
             </p>
           </div>
 
-          {/* A1 — Locked date banner */}
+          {/* A4 — Persistent response indicator */}
+          {hasResponded && !showConfirm && (
+            <div className="flex items-center justify-between border border-white/20 px-4 py-2.5 mb-6 bg-white/3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1.5 h-1.5 bg-white/60 shrink-0" />
+                <p className="text-[11px] tracking-[0.4em] text-white/50 uppercase font-mono">
+                  RAPPORT INLÄMNAD
+                </p>
+              </div>
+              <p className="text-[10px] tracking-[0.3em] text-white/25 uppercase font-mono shrink-0">
+                SVAR REGISTRERAT
+              </p>
+            </div>
+          )}
+
+          {/* Locked date banner */}
           {lockedDate && (
             <div className="border-2 border-white p-5 bg-white/5 mb-8">
               <p className="text-[11px] tracking-[0.5em] text-white/50 uppercase mb-2">
@@ -225,32 +267,53 @@ export default function RespondPage() {
             </div>
           )}
 
-          {/* Select all / clear */}
+          {/* Controls row: B2 view toggle + select all/clear */}
           {dates.length > 0 && (
-            <div className="flex justify-end gap-6 mb-3">
-              <button
-                type="button"
-                onClick={selectAll}
-                className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
-              >
-                [VÄLJ ALLA]
-              </button>
-              <button
-                type="button"
-                onClick={clearAll}
-                className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
-              >
-                [RENSA]
-              </button>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setViewMode("list"); }}
+                  className={`text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 border transition-all duration-100
+                    ${viewMode === "list" ? "border-white text-white" : "border-white/20 text-white/30 hover:border-white/40 hover:text-white/50"}`}
+                >
+                  LISTA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setViewMode("calendar"); }}
+                  className={`text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 border transition-all duration-100
+                    ${viewMode === "calendar" ? "border-white text-white" : "border-white/20 text-white/30 hover:border-white/40 hover:text-white/50"}`}
+                >
+                  KALENDER
+                </button>
+              </div>
+              <div className="flex gap-6">
+                <button
+                  type="button"
+                  onClick={selectAll}
+                  className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
+                >
+                  [VÄLJ ALLA]
+                </button>
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-[11px] tracking-[0.35em] text-white/30 hover:text-white/70 uppercase transition-colors duration-100"
+                >
+                  [RENSA]
+                </button>
+              </div>
             </div>
           )}
 
-          {/* A2 — Month-grouped date list */}
+          {/* Date selection area */}
           {dates.length === 0 ? (
             <p className="text-white/50 text-xs tracking-widest font-mono text-center py-8 border border-white/10">
               INGA DATUM TILLGÄNGLIGA
             </p>
-          ) : (
+          ) : viewMode === "list" ? (
+            /* List view */
             <div className="space-y-6">
               {monthGroups.map((group) => (
                 <div key={group.monthKey}>
@@ -304,7 +367,6 @@ export default function RespondPage() {
                               </p>
                             </div>
                           </div>
-
                           <div className={`shrink-0 w-5 h-5 border-2 flex items-center justify-center ml-4 transition-all duration-75
                             ${isSelected ? "border-black bg-black" : "border-white/30 group-hover:border-white/70"}`}
                           >
@@ -321,9 +383,57 @@ export default function RespondPage() {
                 </div>
               ))}
             </div>
+          ) : (
+            /* B2 — Calendar grid view */
+            <div className="space-y-8">
+              {calendarMonths.map((cm) => (
+                <div key={cm.monthKey}>
+                  <p className="text-[11px] tracking-[0.4em] text-white/40 uppercase font-mono mb-3">
+                    {cm.label}
+                  </p>
+                  <div className="grid grid-cols-7 gap-px">
+                    {SW_DAYS.map((d) => (
+                      <div
+                        key={d}
+                        className="text-[9px] tracking-[0.15em] text-white/25 uppercase font-mono text-center pb-2"
+                      >
+                        {d}
+                      </div>
+                    ))}
+                    {cm.cells.map((dayNum, i) => {
+                      if (!dayNum) return <div key={i} className="aspect-square" />;
+                      const dateStr = `${cm.year}-${String(cm.month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                      const candidate = dateByStr.get(dateStr);
+                      const isSelected = candidate ? selected.has(candidate.id) : false;
+                      const isGlitching = candidate ? glitchingId === candidate.id : false;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          title={candidate ? formatDateLabel(candidate.date) : undefined}
+                          onClick={() => candidate && toggleDate(candidate.id)}
+                          disabled={!candidate}
+                          className={`aspect-square flex items-center justify-center text-[13px] font-mono transition-all duration-75
+                            ${isGlitching ? "select-glitch" : ""}
+                            ${candidate
+                              ? isSelected
+                                ? "bg-white text-black"
+                                : "border border-white/35 text-white hover:border-white hover:bg-white/10"
+                              : "text-white/12 pointer-events-none"
+                            }
+                          `}
+                        >
+                          {dayNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
-          {/* Count */}
+          {/* Selected count */}
           {dates.length > 0 && (
             <p className="text-[13px] tracking-[0.35em] text-white/40 uppercase font-mono mt-4">
               {selected.size === 0
@@ -339,7 +449,7 @@ export default function RespondPage() {
             </p>
           )}
 
-          {/* B2 — Social signal / saved confirmation */}
+          {/* Social signal after save */}
           {saved && !showConfirm && (
             <div className="border border-white/30 text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 py-4 mt-5 bg-white/5 space-y-1">
               <p>[OK] TILLGÄNGLIGHET SPARAD.</p>
@@ -351,28 +461,43 @@ export default function RespondPage() {
             </div>
           )}
 
-          {dates.length > 0 && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-rsa w-full mt-6 border-2 border-white text-white uppercase tracking-[0.35em] py-4 text-sm font-bold hover:bg-white hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ fontSize: "13px" }}
-            >
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  SPARAR <span className="cursor-blink">_</span>
-                </span>
-              ) : (
-                "BEKRÄFTA TILLGÄNGLIGHET"
-              )}
-            </button>
-          )}
-
           <p className="mt-8 text-[13px] tracking-[0.3em] text-white/12 uppercase font-mono text-center">
             RSA SER ALLT // DETTA FORMULÄR ÄR PERSONLIGT
           </p>
         </div>
       </main>
+
+      {/* A2 — Sticky save bar */}
+      {dates.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-black border-t border-white/20 px-4 py-3">
+          <div className="max-w-lg mx-auto flex items-center gap-4">
+            <p className="text-[11px] tracking-[0.3em] text-white/35 uppercase font-mono flex-1 truncate">
+              {selected.size === 0
+                ? "INGA DATUM VALDA"
+                : `${selected.size} / ${dates.length} DATUM VALDA`
+              }
+            </p>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`btn-rsa shrink-0 border-2 uppercase tracking-[0.35em] px-8 py-3 font-bold transition-all duration-100
+                disabled:opacity-30 disabled:cursor-not-allowed
+                ${saved && !saving
+                  ? "border-white/35 text-white/35 hover:border-white hover:text-white"
+                  : "border-white text-white hover:bg-white hover:text-black"
+                }`}
+              style={{ fontSize: "12px" }}
+            >
+              {saving
+                ? <span className="cursor-blink">_</span>
+                : saved
+                  ? "■ SPARAT"
+                  : "BEKRÄFTA"
+              }
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* First-confirmation overlay */}
       {showConfirm && (

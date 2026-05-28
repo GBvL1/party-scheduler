@@ -8,6 +8,7 @@ import { playClick, playConfirm, playBlip, playWelcomeBack } from "@/lib/sound";
 type Friend = { id: string; name: string; token: string; hasResponded: boolean };
 type DateEntry = { id: string; date: string; availableFriends: string[] };
 type ViewMode = "list" | "matrix";
+type DashboardPhase = "empty" | "collecting" | "locked";
 
 function formatDateLabel(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -66,6 +67,7 @@ export default function DashboardPage() {
   const [glitchingDateIds, setGlitchingDateIds] = useState<Set<string>>(new Set());
   const [pollCountdown, setPollCountdown] = useState(15);
   const [newDataFlash, setNewDataFlash] = useState(false);
+  const [newDataBanner, setNewDataBanner] = useState(false);
   const prevDatesRef = useRef<DateEntry[]>([]);
 
   const applyData = useCallback((data: any, silent: boolean) => {
@@ -110,7 +112,9 @@ export default function DashboardPage() {
         applyData(data, true);
         if (hasChanges) {
           setNewDataFlash(true);
+          setNewDataBanner(true);
           setTimeout(() => setNewDataFlash(false), 1800);
+          setTimeout(() => setNewDataBanner(false), 4000);
         }
       } else {
         applyData(data, false);
@@ -124,13 +128,11 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchDashboard(false); }, [fetchDashboard]);
 
-  // Live polling
   useEffect(() => {
     const id = setInterval(() => fetchDashboard(true), 15000);
     return () => clearInterval(id);
   }, [fetchDashboard]);
 
-  // Countdown ticker
   useEffect(() => {
     const id = setInterval(() => setPollCountdown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(id);
@@ -197,6 +199,11 @@ export default function DashboardPage() {
     return `RSA INITIERING // DATUM BEKRÄFTAT\n\n${formatDateLabel(entry.date)}${countLine ? `\n${countLine}` : ""}\n\n// RSA SER ALLT`;
   }
 
+  function buildNudgeMessage() {
+    const names = missingFriends.map((f) => `• ${f.name}`).join("\n");
+    return `RSA INITIERING // UPPDRAGSPÅMINNELSE\n\nFÖLJANDE OPERATIVES HAR EJ RAPPORTERAT IN:\n${names}\n\nRAPPORTERA IN VIA:\n${getJoinLink()}\n\n// RSA SER ALLT`;
+  }
+
   const maxResponders = friends.length;
   const respondedCount = friends.filter((f) => f.hasResponded).length;
   const missingFriends = friends.filter((f) => !f.hasResponded);
@@ -204,10 +211,16 @@ export default function DashboardPage() {
   const lockedDate = lockedDateId ? dates.find((d) => d.id === lockedDateId) : null;
   const recommendation = getRecommendation(sortedDates, maxResponders, lockedDateId);
 
-  // B3: top 3 dates with responses get always-visible LÅS button
   const top3DateIds = new Set(
     sortedDates.filter((d) => d.availableFriends.length > 0).slice(0, 3).map((d) => d.id)
   );
+
+  // A1 — phase drives section ordering and emphasis
+  const phase: DashboardPhase = lockedDateId
+    ? "locked"
+    : respondedCount === 0
+      ? "empty"
+      : "collecting";
 
   if (loading) {
     return (
@@ -265,7 +278,6 @@ export default function DashboardPage() {
                 </>
               )}
               <span className="text-white/20">·</span>
-              {/* B1 — Live indicator */}
               <span className={`text-[10px] tracking-[0.3em] font-mono uppercase transition-colors duration-300
                 ${newDataFlash ? "text-white" : "text-white/20"}`}
               >
@@ -273,6 +285,32 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
+
+          {/* A1 — Empty phase: join link hero surfaces above everything */}
+          {phase === "empty" && (
+            <div className="border-2 border-white/50 p-6 bg-white/3">
+              <p className="text-[10px] tracking-[0.5em] text-white/40 uppercase font-mono mb-3">
+                STEG 1 // REKRYTERA OPERATIVES
+              </p>
+              <h2 className="text-[18px] tracking-[0.2em] text-white uppercase mb-2">
+                DELA REKRYTERINGSLÄNKEN
+              </h2>
+              <p className="text-[12px] tracking-[0.25em] text-white/40 uppercase font-mono mb-4">
+                DELA MED ALLA OPERATIVES. DE REGISTRERAR SINA EGNA NAMN.
+              </p>
+              <div className="flex items-stretch gap-0">
+                <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/40 font-mono tracking-wider truncate">
+                  {typeof window !== "undefined" ? getJoinLink() : ""}
+                </code>
+                <button
+                  onClick={() => copyText(getJoinLink(), "join")}
+                  className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
+                >
+                  {copied === "join" ? "KOPIERAT" : "KOPIERA"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* LOCKED DATE BANNER */}
           {lockedDate && (
@@ -341,16 +379,33 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* A3 — Smart recommendation */}
+            {/* B1 — Smart recommendation in highlighted block */}
             {recommendation && (
-              <p className="text-[11px] tracking-[0.35em] text-white/40 uppercase font-mono mb-4 border-l-2 border-white/20 pl-3">
-                {recommendation}
-              </p>
+              <div className="border border-white/40 bg-white/5 px-5 py-4 mb-5">
+                <p className="text-[10px] tracking-[0.5em] text-white/40 uppercase font-mono mb-2">
+                  ■ INTEL ANALYS
+                </p>
+                <p className="text-[14px] tracking-[0.15em] text-white uppercase font-mono">
+                  {recommendation}
+                </p>
+              </div>
+            )}
+
+            {/* B3 — New-response notification banner */}
+            {newDataBanner && (
+              <div className="border border-white/60 bg-white/5 px-5 py-3 mb-4 text-center">
+                <p className="text-[11px] tracking-[0.5em] text-white uppercase font-mono">
+                  ■ INKOMMANDE INTEL // NY RAPPORT MOTTAGEN
+                </p>
+              </div>
             )}
 
             {dates.length === 0 ? (
               <p className="text-white/40 text-[12px] tracking-widest uppercase font-mono text-center py-8 border border-white/10">
-                INGA SVAR ÄNNU
+                {phase === "empty"
+                  ? "INGA SVAR ÄNNU — VÄNTAR PÅ OPERATIVES"
+                  : "INGA SVAR ÄNNU"
+                }
               </p>
             ) : viewMode === "list" ? (
               <div className="space-y-px">
@@ -408,7 +463,6 @@ export default function DashboardPage() {
                               /{maxResponders}
                             </span>
                           </div>
-                          {/* B3 — LÅS button: always visible for top 3, hover-only for rest, hidden for zero-response */}
                           {showLasAlways && (
                             <button
                               onClick={() => { playClick(); setLockingDateId(d.id); }}
@@ -524,15 +578,26 @@ export default function DashboardPage() {
           {/* REGISTRERADE OPERATIVES */}
           {friends.length > 0 && (
             <div className="border border-white/10 p-5">
-              <div className="flex items-center justify-between mb-4 gap-4">
+              <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
                 <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase">
                   OPERATIVES ({friends.length})
                 </h2>
-                {missingFriends.length > 0 && (
-                  <span className="text-[10px] tracking-[0.3em] text-red-400/60 uppercase font-mono shrink-0">
-                    {missingFriends.length} AVVAKTAR
-                  </span>
-                )}
+                {/* C3 — nudge copy + missing count */}
+                <div className="flex items-center gap-4 shrink-0">
+                  {missingFriends.length > 0 && (
+                    <>
+                      <span className="text-[10px] tracking-[0.3em] text-red-400/60 uppercase font-mono">
+                        {missingFriends.length} AVVAKTAR
+                      </span>
+                      <button
+                        onClick={() => copyText(buildNudgeMessage(), "nudge")}
+                        className="text-[10px] tracking-[0.3em] text-white/30 hover:text-white/70 uppercase font-mono underline underline-offset-4 transition-colors duration-100"
+                      >
+                        {copied === "nudge" ? "KOPIERAT" : "KOPIERA PÅMINNELSE"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="space-y-px">
                 {friends.map((f, i) => (
@@ -558,25 +623,28 @@ export default function DashboardPage() {
 
           {/* LOGISTICS */}
           <div className="space-y-4">
-            <div className="border border-white/20 p-5">
-              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-                DEPLOYMENT LINK
-              </h2>
-              <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
-                DELA DENNA LÄNK MED ALLA OPERATIVES. DE REGISTRERAR SINA EGNA NAMN.
-              </p>
-              <div className="flex items-stretch gap-0">
-                <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/40 font-mono tracking-wider truncate">
-                  {typeof window !== "undefined" ? getJoinLink() : ""}
-                </code>
-                <button
-                  onClick={() => copyText(getJoinLink(), "join")}
-                  className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
-                >
-                  {copied === "join" ? "KOPIERAT" : "KOPIERA"}
-                </button>
+            {/* A1 — join link shown at bottom only in non-empty phases (shown at top in empty phase) */}
+            {phase !== "empty" && (
+              <div className="border border-white/20 p-5">
+                <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+                  DEPLOYMENT LINK
+                </h2>
+                <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
+                  DELA DENNA LÄNK MED ALLA OPERATIVES. DE REGISTRERAR SINA EGNA NAMN.
+                </p>
+                <div className="flex items-stretch gap-0">
+                  <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/40 font-mono tracking-wider truncate">
+                    {typeof window !== "undefined" ? getJoinLink() : ""}
+                  </code>
+                  <button
+                    onClick={() => copyText(getJoinLink(), "join")}
+                    className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100"
+                  >
+                    {copied === "join" ? "KOPIERAT" : "KOPIERA"}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="border border-white/10 p-5">
               <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
