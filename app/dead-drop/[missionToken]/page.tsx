@@ -4,6 +4,22 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { playBlip } from "@/lib/sound";
 
+function useTypewriter(text: string, active: boolean, speed = 35) {
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    setDisplayed("");
+    if (!active || !text) return;
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, active, speed]);
+  return displayed;
+}
+
 function formatDateFull(dateStr: string) {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day)
@@ -91,6 +107,9 @@ export default function DeadDropPage() {
     );
   }
 
+  const bringText = bringItems.map((i) => `• ${i}`).join("\n");
+  const typedBring = useTypewriter(bringText, revealStep >= 5 && bringItems.length > 0);
+
   return (
     <main
       className={`min-h-screen flex flex-col justify-center px-6 py-16 transition-opacity duration-700 ${visible ? "opacity-100" : "opacity-0"}`}
@@ -129,13 +148,9 @@ export default function DeadDropPage() {
             <p className="text-[10px] tracking-[0.5em] text-white/50 uppercase mb-3 mt-6">
               TA MED
             </p>
-            <div className="space-y-1 mb-6">
-              {bringItems.map((item, i) => (
-                <p key={i} className="text-[13px] tracking-[0.1em] text-white uppercase">
-                  • {item}
-                </p>
-              ))}
-            </div>
+            <pre className="text-[13px] tracking-[0.1em] text-white uppercase font-mono leading-relaxed mb-6 whitespace-pre-wrap">
+              {typedBring}{typedBring.length < bringText.length && <span className="cursor-blink">_</span>}
+            </pre>
           </>
         )}
 
