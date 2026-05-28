@@ -78,6 +78,7 @@ export default function RespondPage() {
   const [savedRespondedCount, setSavedRespondedCount] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [confirmFlash, setConfirmFlash] = useState(false);
+  const [location, setLocation] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -91,6 +92,7 @@ export default function RespondPage() {
       setIsFirstSave(!hasExisting);
       setHasResponded(hasExisting);
       setLockedDate(data.lockedDate ?? null);
+      setLocation(data.location ?? null);
       setRespondedCount(data.respondedCount ?? 0);
       setTotalCount(data.totalCount ?? 0);
     } catch {
@@ -271,6 +273,17 @@ export default function RespondPage() {
               <p className="text-[clamp(18px,4vw,28px)] tracking-[0.12em] text-white uppercase leading-tight mb-5">
                 {formatDateLabel(lockedDate.date)}
               </p>
+              {location && (
+                <>
+                  <div className="h-px bg-white/10 mb-4" />
+                  <p className="text-[10px] tracking-[0.45em] text-white/30 uppercase font-mono mb-1">
+                    KOORDINATER
+                  </p>
+                  <p className="text-[13px] tracking-[0.15em] text-white uppercase font-mono mb-4">
+                    {location}
+                  </p>
+                </>
+              )}
               <div className="h-px bg-white/15 mb-4" />
               {!hasResponded ? (
                 <p className="text-[11px] tracking-[0.4em] text-white/40 uppercase font-mono">

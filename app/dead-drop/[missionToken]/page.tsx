@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { playBlip, playClick } from "@/lib/sound";
 
@@ -23,9 +23,11 @@ export default function DeadDropPage() {
   const [error, setError] = useState("");
   const [lockedDate, setLockedDate] = useState("");
   const [missionRef, setMissionRef] = useState("");
+  const [location, setLocation] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const [revealStep, setRevealStep] = useState(0);
   const [wiped, setWiped] = useState(false);
+  const locationRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -39,6 +41,8 @@ export default function DeadDropPage() {
         }
         setLockedDate(data.lockedDate);
         setMissionRef(data.missionRef);
+        setLocation(data.location ?? null);
+        locationRef.current = data.location ?? null;
         setLoading(false);
       } catch {
         setError("NÄTVERKSFEL.");
@@ -59,7 +63,10 @@ export default function DeadDropPage() {
   useEffect(() => {
     if (!visible) return;
     playBlip();
-    const delays = [300, 700, 1100, 1500, 2000, 2600, 3300];
+    const loc = locationRef.current;
+    const delays = loc
+      ? [300, 700, 1100, 1500, 2000, 2400, 2800, 3300, 4000]
+      : [300, 700, 1100, 1500, 2000, 2600, 3300];
     const timers = delays.map((d, i) =>
       setTimeout(() => setRevealStep(i + 1), d)
     );
@@ -129,7 +136,19 @@ export default function DeadDropPage() {
           </p>
         )}
 
-        {revealStep >= 5 && (
+        {revealStep >= 5 && location && (
+          <p className="text-[10px] tracking-[0.5em] text-white/30 uppercase mb-2 mt-6">
+            KOORDINATER
+          </p>
+        )}
+
+        {revealStep >= 6 && location && (
+          <p className="text-[clamp(13px,2.5vw,18px)] tracking-[0.12em] text-white uppercase leading-snug mb-6">
+            {location}
+          </p>
+        )}
+
+        {revealStep >= (location ? 7 : 5) && (
           <>
             <div className="h-px bg-white/10 mb-4" />
             <p className="text-[10px] tracking-[0.45em] text-white/20 uppercase">
@@ -138,14 +157,14 @@ export default function DeadDropPage() {
           </>
         )}
 
-        {revealStep >= 6 && (
+        {revealStep >= (location ? 8 : 6) && (
           <p className="text-[10px] tracking-[0.3em] text-white/12 uppercase leading-relaxed mt-8">
             DETTA DOKUMENT ÄR AVSETT ENBART FÖR MOTTAGAREN.<br />
             RSA FÖRNEKAR ALL KÄNNEDOM OM DESS EXISTENS.
           </p>
         )}
 
-        {revealStep >= 7 && (
+        {revealStep >= (location ? 9 : 7) && (
           <div className="mt-10">
             <button
               onClick={handleWipe}

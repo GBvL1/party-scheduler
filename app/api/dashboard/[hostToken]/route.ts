@@ -9,7 +9,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, name, created_at, locked_date_id, mission_token")
+    .select("id, name, created_at, locked_date_id, mission_token, location")
     .eq("host_token", hostToken)
     .single();
 
@@ -78,6 +78,7 @@ export async function GET(
     createdAt: event.created_at,
     lockedDateId: event.locked_date_id ?? null,
     missionToken: event.mission_token ?? null,
+    location: event.location ?? null,
     friends: (friends ?? []).map((f) => ({
       id: f.id,
       name: f.name,
@@ -86,4 +87,34 @@ export async function GET(
     })),
     dates: datesWithCounts,
   });
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ hostToken: string }> }
+) {
+  const { hostToken } = await params;
+  const { location } = await req.json();
+  const trimmed = typeof location === "string" ? location.trim() : null;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("id")
+    .eq("host_token", hostToken)
+    .single();
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found." }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from("events")
+    .update({ location: trimmed || null })
+    .eq("host_token", hostToken);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to update location." }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, location: trimmed || null });
 }
