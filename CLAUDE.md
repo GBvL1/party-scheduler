@@ -62,8 +62,9 @@ app/
                                     # LÅS on top-3 only, date locking, enriched share card (includes location if set),
                                     # "KOPIERA UPPDRAGSLÄNK" + "KOPIERA DEAD DROP" buttons when date locked,
                                     # "KOPIERA PÅMINNELSE" button for non-responding operatives (C3),
-                                    # KOORDINATER section in logistics: host sets/edits meeting location → shown in
-                                    #   dead drop, respond hero, and share message; PATCH /api/dashboard/[hostToken]
+                                    # KOORDINATER section below locked date banner (only when date locked): host
+                                    #   sets/edits meeting location → shown in dead drop, respond hero, and share
+                                    #   message; PATCH /api/dashboard/[hostToken]
   mission/[missionToken]/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
                                     # 3 yes/no commitment questions → name entry → accept/abort.

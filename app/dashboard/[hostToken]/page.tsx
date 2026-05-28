@@ -401,6 +401,62 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* KOORDINATER — shown when date is locked */}
+          {lockedDate && (
+            <div className="border border-white/20 p-5">
+              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
+                KOORDINATER
+              </h2>
+              <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
+                MÖTESPLATS. VISAS VIA DEAD DROP OCH KALLELSE.
+              </p>
+              {location !== null && !locationEditing ? (
+                <div className="flex items-center gap-0">
+                  <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/60 font-mono tracking-wider truncate">
+                    {location}
+                  </code>
+                  <button
+                    onClick={() => { playClick(); setLocationEditing(true); }}
+                    className="shrink-0 border border-white/30 text-white/40 text-[11px] tracking-[0.3em] uppercase font-mono px-4 py-3 hover:border-white hover:text-white transition-all duration-100"
+                  >
+                    ÄNDRA
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-stretch gap-0">
+                    <input
+                      type="text"
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveLocation();
+                        if (e.key === "Escape" && location !== null) { setLocationEditing(false); setLocationInput(location); }
+                      }}
+                      placeholder="T.EX. LAGERLOKAL 7, HAMNGATAN 4"
+                      className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/70 font-mono tracking-wider placeholder:text-white/20 outline-none focus:border-white/40"
+                    />
+                    <button
+                      onClick={saveLocation}
+                      disabled={locationSaving || !locationInput.trim()}
+                      className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30"
+                    >
+                      {locationSaving ? <span className="cursor-blink">_</span> : "SPARA"}
+                    </button>
+                  </div>
+                  {location !== null && (
+                    <button
+                      onClick={() => { setLocationEditing(false); setLocationInput(location); }}
+                      className="text-[10px] tracking-[0.3em] text-white/25 hover:text-white/50 uppercase font-mono underline underline-offset-4 transition-colors duration-100"
+                    >
+                      AVBRYT
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* INTEL RAPPORT */}
           <div>
             <div className="flex items-center justify-between mb-4 gap-4">
@@ -691,59 +747,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
-            <div className="border border-white/20 p-5">
-              <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
-                KOORDINATER
-              </h2>
-              <p className="text-[13px] tracking-[0.25em] text-white/30 uppercase font-mono mb-4">
-                MÖTESPLATS. VISAS VIA DEAD DROP OCH KALLELSE.
-              </p>
-              {location !== null && !locationEditing ? (
-                <div className="flex items-center gap-0">
-                  <code className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/60 font-mono tracking-wider truncate">
-                    {location}
-                  </code>
-                  <button
-                    onClick={() => { playClick(); setLocationEditing(true); }}
-                    className="shrink-0 border border-white/30 text-white/40 text-[11px] tracking-[0.3em] uppercase font-mono px-4 py-3 hover:border-white hover:text-white transition-all duration-100"
-                  >
-                    ÄNDRA
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-stretch gap-0">
-                    <input
-                      type="text"
-                      value={locationInput}
-                      onChange={(e) => setLocationInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveLocation();
-                        if (e.key === "Escape" && location !== null) { setLocationEditing(false); setLocationInput(location); }
-                      }}
-                      placeholder="T.EX. LAGERLOKAL 7, HAMNGATAN 4"
-                      className="flex-1 bg-white/5 border border-white/15 px-3 py-3 text-[12px] text-white/70 font-mono tracking-wider placeholder:text-white/20 outline-none focus:border-white/40"
-                    />
-                    <button
-                      onClick={saveLocation}
-                      disabled={locationSaving || !locationInput.trim()}
-                      className="shrink-0 border-2 border-white text-white text-[12px] tracking-[0.3em] uppercase font-mono px-5 hover:bg-white hover:text-black transition-all duration-100 disabled:opacity-30"
-                    >
-                      {locationSaving ? <span className="cursor-blink">_</span> : "SPARA"}
-                    </button>
-                  </div>
-                  {location !== null && (
-                    <button
-                      onClick={() => { setLocationEditing(false); setLocationInput(location); }}
-                      className="text-[10px] tracking-[0.3em] text-white/25 hover:text-white/50 uppercase font-mono underline underline-offset-4 transition-colors duration-100"
-                    >
-                      AVBRYT
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
 
             <div className="border border-white/10 p-5">
               <h2 className="text-[13px] tracking-[0.4em] text-white/50 uppercase mb-1">
