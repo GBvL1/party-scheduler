@@ -49,7 +49,9 @@ app/
   respond/[friendToken]/
     page.tsx                        # Guest marks dates; LISTA/KALENDER view toggle (B2), month-grouped list,
                                     # calendar grid (Mon-first, candidate dates tappable, non-candidates dimmed),
-                                    # [VÄLJ ALLA]/[RENSA], arrow-key nav (list only), locked-date banner,
+                                    # [VÄLJ ALLA]/[RENSA], arrow-key nav (list only),
+                                    # mission confirmation hero when date locked: large date + personal status
+                                    #   (■ TILLGÄNGLIG / ■ DATUM KONFLIKTAR / SVAR SAKNAS), select-glitch on enter,
                                     # persistent "RAPPORT INLÄMNAD" indicator once responded (A4),
                                     # sticky save bar pinned to bottom viewport (A2), social signal after save
   dashboard/[hostToken]/

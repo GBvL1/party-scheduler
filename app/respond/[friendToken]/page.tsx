@@ -77,6 +77,7 @@ export default function RespondPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [savedRespondedCount, setSavedRespondedCount] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [confirmFlash, setConfirmFlash] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -111,6 +112,15 @@ export default function RespondPage() {
   useEffect(() => {
     if (lockedDate && !loading) playBlip();
   }, [lockedDate?.id, loading]);
+
+  // Glitch flash on the confirmation hero when locked date first appears after boot
+  const lockedDateId = lockedDate?.id ?? null;
+  useEffect(() => {
+    if (!lockedDateId || !booted) return;
+    setConfirmFlash(true);
+    const t = setTimeout(() => setConfirmFlash(false), 480);
+    return () => clearTimeout(t);
+  }, [lockedDateId, booted]);
 
   function selectAll() {
     playClick();
@@ -252,18 +262,29 @@ export default function RespondPage() {
             </div>
           )}
 
-          {/* Locked date banner */}
+          {/* Mission confirmation hero */}
           {lockedDate && (
-            <div className="border-2 border-white p-5 bg-white/5 mb-8">
-              <p className="text-[11px] tracking-[0.5em] text-white/50 uppercase mb-2">
-                OPERATION LOCKED // DATUM BEKRÄFTAT
+            <div className={`border-2 border-white p-6 mb-8 bg-white/5 ${confirmFlash ? "select-glitch" : ""}`}>
+              <p className="text-[10px] tracking-[0.6em] text-white/40 uppercase font-mono mb-5">
+                ■ MISSION BEKRÄFTAD // DATUM FASTSTÄLLT
               </p>
-              <p className="text-[clamp(13px,2.5vw,18px)] tracking-[0.2em] text-white uppercase">
+              <p className="text-[clamp(18px,4vw,28px)] tracking-[0.12em] text-white uppercase leading-tight mb-5">
                 {formatDateLabel(lockedDate.date)}
               </p>
-              <p className="text-[11px] tracking-[0.3em] text-white/35 uppercase font-mono mt-3">
-                DU KAN FORTFARANDE UPPDATERA DITT SVAR NEDAN
-              </p>
+              <div className="h-px bg-white/15 mb-4" />
+              {!hasResponded ? (
+                <p className="text-[11px] tracking-[0.4em] text-white/40 uppercase font-mono">
+                  DITT SVAR SAKNAS — UPPDATERA NEDAN
+                </p>
+              ) : selected.has(lockedDate.id) ? (
+                <p className="text-[11px] tracking-[0.4em] text-white/70 uppercase font-mono">
+                  ■ DU ÄR TILLGÄNGLIG DETTA DATUM
+                </p>
+              ) : (
+                <p className="text-[11px] tracking-[0.4em] text-red-400/60 uppercase font-mono">
+                  ■ DATUM KONFLIKTAR MED DITT SVAR
+                </p>
+              )}
             </div>
           )}
 
