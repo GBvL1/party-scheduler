@@ -168,7 +168,7 @@ export default function MissionPage() {
     if (crashPhase !== "black") return;
     const id = setTimeout(() => {
       router.push(`/dead-drop/${missionToken}`);
-    }, 3000);
+    }, 1500);
     return () => clearTimeout(id);
   }, [crashPhase, missionToken, router]);
 
