@@ -58,7 +58,7 @@ app/
                                     # new-response notification banner + row glitch (B3),
                                     # state-aware layout: empty → join link hero at top; collecting/locked → results first (A1),
                                     # LÅS on top-3 only, date locking, enriched share card,
-                                    # "KOPIERA UPPDRAGSLÄNK" button visible when date locked,
+                                    # "KOPIERA UPPDRAGSLÄNK" + "KOPIERA DEAD DROP" buttons when date locked,
                                     # "KOPIERA PÅMINNELSE" button for non-responding operatives (C3)
   mission/[missionToken]/
     page.tsx                        # Spy-style mission acceptance page for surprise guests (no party knowledge).
@@ -68,7 +68,15 @@ app/
                                     # 5s self-destruct countdown → glitch-crash (1.6s, steps(1,end)) → permanent black.
                                     # Fixed z-99999 black overlay covers ALL layout elements after crash.
                                     # flicker class removed from wrapper during crash to prevent fighting opacity.
+                                    # After 3s of black → auto-redirects to /dead-drop/[missionToken].
                                     # Declining: self-destruct countdown + "OMPRÖVA BESLUTET" to restart.
+  dead-drop/[missionToken]/
+    page.tsx                        # Post-mission intel page. Accessible at /dead-drop/[missionToken].
+                                    # Reached via auto-redirect from mission page (3s after permanent black).
+                                    # Also linkable directly from dashboard "KOPIERA DEAD DROP" button.
+                                    # Staggered reveal (7 steps, ~3.3s total) of: header, REF, date, status, disclaimer.
+                                    # No RSA logo, no crt-boot — raw terminal aesthetic, gentle fade-in.
+                                    # "RADERA LOKAL KOPIA" button navigates to /. Page always revisitable.
   api/
     events/route.ts                 # POST — create event + dates
     friends/route.ts                # POST — register guest by name

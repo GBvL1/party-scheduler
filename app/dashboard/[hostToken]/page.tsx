@@ -182,6 +182,10 @@ export default function DashboardPage() {
     return `${window.location.origin}/mission/${missionToken}`;
   }
 
+  function getDeadDropLink() {
+    return `${window.location.origin}/dead-drop/${missionToken}`;
+  }
+
   async function copyText(text: string, key: string) {
     playClick();
     await navigator.clipboard.writeText(text);
@@ -343,6 +347,14 @@ export default function DashboardPage() {
                     className="btn-rsa border border-white/50 text-white/70 uppercase tracking-[0.3em] px-6 py-2 text-[12px] font-bold hover:border-white hover:text-white transition-all duration-100"
                   >
                     {copied === "mission" ? "KOPIERAT" : "KOPIERA UPPDRAGSLÄNK"}
+                  </button>
+                )}
+                {missionToken && (
+                  <button
+                    onClick={() => copyText(getDeadDropLink(), "deadDrop")}
+                    className="btn-rsa border border-white/30 text-white/45 uppercase tracking-[0.3em] px-6 py-2 text-[12px] font-bold hover:border-white/60 hover:text-white/70 transition-all duration-100"
+                  >
+                    {copied === "deadDrop" ? "KOPIERAT" : "KOPIERA DEAD DROP"}
                   </button>
                 )}
                 <button

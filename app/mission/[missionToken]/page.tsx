@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { playClick, playConfirm, playError } from "@/lib/sound";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ function useTypewriter(text: string, active: boolean, delay = 0, speed = 30) {
 
 export default function MissionPage() {
   const { missionToken } = useParams<{ missionToken: string }>();
+  const router = useRouter();
   const [missionData, setMissionData] = useState<MissionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -161,6 +162,15 @@ export default function MissionPage() {
     const timer = setTimeout(() => setShowBriefingCountdown(true), 7000);
     return () => clearTimeout(timer);
   }, [step, briefingTyped.length]);
+
+  // After permanent black: redirect to dead drop after 3s
+  useEffect(() => {
+    if (crashPhase !== "black") return;
+    const id = setTimeout(() => {
+      router.push(`/dead-drop/${missionToken}`);
+    }, 3000);
+    return () => clearTimeout(id);
+  }, [crashPhase, missionToken, router]);
 
   // Countdown 5→0 → crash → permanent black
   useEffect(() => {
